@@ -1,0 +1,40 @@
+{
+  "title": "TransactionList",
+  "type": "array",
+  "items": {
+    "title": "Transaction",
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "integer"
+      },
+      "date": {
+        "type": "string"
+      },
+      "amount": {
+        "type": "float"
+      },
+      "externalIBAN": {
+        "type": "string"
+      },
+      "type": {
+        "type": "string",
+        "enum": [
+          "deposit",
+          "withdrawal"
+        ]
+      },
+      "category": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

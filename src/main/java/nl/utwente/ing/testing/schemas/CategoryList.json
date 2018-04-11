@@ -1,0 +1,12 @@
+{
+  "title": "CategoryList",
+  "type": "array",
+  "items": {
+    "id": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    }
+  }
+}

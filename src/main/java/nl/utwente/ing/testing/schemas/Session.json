@@ -1,0 +1,9 @@
+{
+  "title": "Session",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    }
+  }
+}
