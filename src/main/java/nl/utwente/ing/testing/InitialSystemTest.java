@@ -131,6 +131,7 @@ public class InitialSystemTest {
         given().header("X-session-ID", sessionID).
                 get("/api/v1/transactions/" + transactionID).
                 then().statusCode(200).
+                body("$", hasKey("id")).
                 body("date", equalTo("2018-04-13T08:06:10.000Z")).
                 body("amount", equalTo((float) 100)).
                 body("externalIBAN", equalTo("NL39RABO0300065264")).
@@ -374,6 +375,77 @@ public class InitialSystemTest {
                 then().statusCode(204);
     }
 
+    @Test
+    public void categoryAtGetTransactions() {
+        // Used to test whether the category is correctly displayed in the getTransactions request
+        Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
+                100, "NL39RABO0300065264", "deposit");
+        Category category = new Category("Groceries");
+        String newSessionID = getNewSessionID();
+        long transactionID = postTransaction(newSessionID, transaction);
+        long categoryID = postCategory(newSessionID, category);
+        assignCategoryToTransaction(newSessionID, transactionID, categoryID);
+        String responseString = given().header("X-session-ID", newSessionID).get("/api/v1/transactions").
+                then().statusCode(200).
+                contentType(ContentType.JSON).extract().response().asString();
+        Map<String, ?> responseMap = (Map<String, ?>) ((ArrayList) from(responseString).get("")).get(0);
+        assertThat((String) responseMap.get("date"), equalTo(transaction.getDate()));
+        assertThat((Float) responseMap.get("amount"), equalTo(transaction.getAmount()));
+        assertThat((String) responseMap.get("externalIBAN"), equalTo(transaction.getExternalIBAN()));
+        assertThat((String) responseMap.get("type"), equalTo(transaction.getType()));
+        responseMap = (Map<String, ?>) responseMap.get("category");
+        assertThat((String) responseMap.get("name"), equalTo(category.getName()));
+        assertThat(new Long((Integer) responseMap.get("id")), equalTo(categoryID));
+    }
+
+    @Test
+    public void testCategoryAtGetTransaction() {
+        // Used to test whether the category is correctly displayed in the getTransaction request
+        Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
+                100, "NL39RABO0300065264", "deposit");
+        Category category = new Category("Groceries");
+        long transactionID = postTransaction(sessionID, transaction);
+        long categoryID = postCategory(sessionID, category);
+        assignCategoryToTransaction(sessionID, transactionID, categoryID);
+        String responseString = given().header("X-session-ID", sessionID).
+                get("/api/v1/transactions/" + transactionID).
+                then().statusCode(200).
+                body("$", hasKey("id")).
+                body("date", equalTo("2018-04-13T08:06:10.000Z")).
+                body("amount", equalTo((float) 100)).
+                body("externalIBAN", equalTo("NL39RABO0300065264")).
+                body("type", equalTo("deposit")).
+                contentType(ContentType.JSON).extract().response().asString();
+        Map<String, ?> responseMap = from(responseString).get("category");
+        assertThat((String) responseMap.get("name"), equalTo(category.getName()));
+        assertThat(new Long((Integer) responseMap.get("id")), equalTo(categoryID));
+    }
+
+    @Test
+    public void testCategoryAtPutTransaction() {
+        // Used to test whether the category is correctly displayed in the putTransaction request
+        Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
+                100, "NL39RABO0300065264", "deposit");
+        Category category = new Category("Groceries");
+        long transactionID = postTransaction(sessionID, transaction);
+        long categoryID = postCategory(sessionID, category);
+        assignCategoryToTransaction(sessionID, transactionID, categoryID);
+        String responseString = given().header("X-session-ID", sessionID).
+                contentType("application/json").body(transaction).
+                put("/api/v1/transactions/" + transactionID).
+                then().statusCode(200).
+                body("$", hasKey("id")).
+                body("date", equalTo("2018-04-13T08:06:10.000Z")).
+                body("amount", equalTo((float) 100)).
+                body("externalIBAN", equalTo("NL39RABO0300065264")).
+                body("type", equalTo("deposit")).
+                contentType(ContentType.JSON).extract().response().asString();
+        Map<String, ?> responseMap = from(responseString).get("category");
+        assertThat((String) responseMap.get("name"), equalTo(category.getName()));
+        assertThat(new Long((Integer) responseMap.get("id")), equalTo(categoryID));
+    }
+
+
 
 
 
@@ -412,6 +484,14 @@ public class InitialSystemTest {
                 then().contentType(ContentType.JSON).extract().response().asString();
         Map<String, ?> responseMap = from(responseString).get("");
         return new Long((Integer) responseMap.get("id"));
+    }
+
+    public static void assignCategoryToTransaction(String sessionID, long transactionID, long categoryID) {
+        Map<String, Long> categoryIDMap = new HashMap<>();
+        categoryIDMap.put("category_id", categoryID);
+        given().header("X-session-ID", sessionID).
+                contentType("application/json").body(categoryIDMap).
+                patch("/api/v1/transactions/" + transactionID + "/category");
     }
 
 }
