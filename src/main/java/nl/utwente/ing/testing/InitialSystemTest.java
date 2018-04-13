@@ -1,22 +1,16 @@
 package nl.utwente.ing.testing;
 
-import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import io.restassured.response.Response;
 import nl.utwente.ing.testing.bean.Category;
 import nl.utwente.ing.testing.bean.Transaction;
-import org.hamcrest.Matchers;
-import org.junit.BeforeClass;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import javax.annotation.concurrent.ThreadSafe;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import static io.restassured.RestAssured.*;
-import static io.restassured.matcher.RestAssuredMatchers.*;
 import static io.restassured.path.json.JsonPath.from;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -388,7 +382,7 @@ public class InitialSystemTest {
         String responseString = given().header("X-session-ID", newSessionID).get("/api/v1/transactions").
                 then().statusCode(200).
                 contentType(ContentType.JSON).extract().response().asString();
-        Map<String, ?> responseMap = (Map<String, ?>) ((ArrayList) from(responseString).get("")).get(0);
+        Map<String, ?> responseMap = (Map<String, ?>) ((ArrayList<Map<String, ?>>) from(responseString).get("")).get(0);
         assertThat((String) responseMap.get("date"), equalTo(transaction.getDate()));
         assertThat((Float) responseMap.get("amount"), equalTo(transaction.getAmount()));
         assertThat((String) responseMap.get("externalIBAN"), equalTo(transaction.getExternalIBAN()));
@@ -445,8 +439,57 @@ public class InitialSystemTest {
         assertThat(new Long((Integer) responseMap.get("id")), equalTo(categoryID));
     }
 
+    @Test
+    public void testFilterOnCategories() {
+        // Used to test whether filtering on categories works correctly in the getTransactions request
+        Category category1 = new Category("Groceries");
+        Category category2 = new Category("Rent");
+        ArrayList<Transaction> transactionList = new ArrayList<>();
+        transactionList.add(new Transaction("2015-04-13T08:06:10.000Z",
+                100, "NL01RABO0300065264", "deposit"));
+        transactionList.add(new Transaction("2016-04-13T08:06:10.000Z",
+                200, "NL02RABO0300065264", "withdrawal"));
+        transactionList.add(new Transaction("2017-04-13T08:06:10.000Z",
+                300, "NL03RABO0300065264", "deposit"));
+        transactionList.add(new Transaction("2018-04-13T08:06:10.000Z",
+                400, "NL04RABO0300065264", "withdrawal"));
+        String newSessionID = getNewSessionID();
+        long categoryID1 = postCategory(newSessionID, category1);
+        long categoryID2 = postCategory(newSessionID, category2);
+        for (Transaction transaction : transactionList) {
+            long transactionID = postTransaction(newSessionID, transaction);
+            if (transactionID % 2 == 1) {
+                assignCategoryToTransaction(newSessionID, transactionID, categoryID1);
+            } else {
+                assignCategoryToTransaction(newSessionID, transactionID, categoryID2);
+            }
+        }
 
-
+        String responseString = given().header("X-session-ID", newSessionID).
+                queryParam("category", "Groceries").
+                get("/api/v1/transactions").
+                then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
+        ArrayList<Map<String, ?>> responseList = from(responseString).get("");
+        assertThat(responseList.size(), equalTo(2));
+        for (int i = 0; i < 2; i++) {
+            long transactionID = new Long((Integer) responseList.get(i).get("id"));
+            Map<String, ?> responseMap = (Map<String, ?>) responseList.get(i).get("category");
+            assertThat((String) responseMap.get("name"), equalTo(category1.getName()));
+            assertThat(new Long((Integer) responseMap.get("id")), equalTo(categoryID1));
+        }
+        responseString = given().header("X-session-ID", newSessionID).
+                queryParam("category", "Rent").
+                get("/api/v1/transactions").
+                then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
+        responseList = from(responseString).get("");
+        assertThat(responseList.size(), equalTo(2));
+        for (int i = 0; i < 2; i++) {
+            long transactionID = new Long((Integer) responseList.get(i).get("id"));
+            Map<String, ?> responseMap = (Map<String, ?>) responseList.get(i).get("category");
+            assertThat((String) responseMap.get("name"), equalTo(category2.getName()));
+            assertThat(new Long((Integer) responseMap.get("id")), equalTo(categoryID2));
+        }
+    }
 
 
 
