@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 import static io.restassured.RestAssured.*;
@@ -191,6 +192,56 @@ public class InitialSystemTest {
         long transactionID = postTransaction(transaction);
         given().header("X-session-ID", sessionID).delete("/api/v1/transactions/" + transactionID).
                 then().statusCode(204);
+    }
+
+    @Test
+    public void testAssignCategoryToTransaction() {
+        Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
+                100, "NL39RABO0300065264", "deposit");
+        Category category1 = new Category("Groceries");
+        Category category2 = new Category("Rent");
+        long transactionID = postTransaction(transaction);
+        long categoryID1 = postCategory(category1);
+        long categoryID2 = postCategory(category2);
+        Map<String, Long> categoryIDMap = new HashMap<>();
+        categoryIDMap.put("category_id", categoryID1);
+
+        // Test invalid session ID status code
+        given().contentType("application/json").body(categoryIDMap).
+                patch("/api/v1/transactions/1/category").then().statusCode(401);
+        given().header("X-session-ID", "A1B2C3D4E5").
+                contentType("application/json").body(categoryIDMap).
+                patch("/api/v1/transactions/1/category").then().statusCode(401);
+
+        // Test valid assignment
+        String responseString = given().header("X-session-ID", sessionID).
+                contentType("application/json").body(categoryIDMap).
+                patch("/api/v1/transactions/" + transactionID + "/category").
+                then().statusCode(200).
+                contentType(ContentType.JSON).extract().response().asString();
+        Map<String, ?> responseMap = from(responseString).get("category");
+        assertThat((String) responseMap.get("name"), equalTo(category1.getName()));
+        assertThat(new Long((Integer) responseMap.get("id")), equalTo(categoryID1));
+        categoryIDMap.put("category_id", categoryID2);
+        responseString = given().header("X-session-ID", sessionID).
+                contentType("application/json").body(categoryIDMap).
+                patch("/api/v1/transactions/" + transactionID + "/category").
+                then().statusCode(200).
+                contentType(ContentType.JSON).extract().response().asString();
+        responseMap = from(responseString).get("category");
+        assertThat((String) responseMap.get("name"), equalTo(category2.getName()));
+        assertThat(new Long((Integer) responseMap.get("id")), equalTo(categoryID2));
+
+        // Test invalid transaction ID and invalid category ID
+        given().header("X-session-ID", sessionID).
+                contentType("application/json").body(categoryIDMap).
+                patch("/api/v1/transactions/7183291/category").
+                then().statusCode(404);
+        categoryIDMap.put("category_id", new Long(7183291));
+        given().header("X-session-ID", sessionID).
+                contentType("application/json").body(categoryIDMap).
+                patch("/api/v1/transactions/" + transactionID + "/category").
+                then().statusCode(404);
     }
 
     @Test
