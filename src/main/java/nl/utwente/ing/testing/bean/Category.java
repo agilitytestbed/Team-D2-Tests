@@ -8,7 +8,6 @@ package nl.utwente.ing.testing.bean;
  */
 public class Category {
 
-    private long id;
     private String name;
 
     /**
@@ -23,30 +22,10 @@ public class Category {
      * A constructor of Category.
      * Used when created a Category with categoryID.
      *
-     * @param id   The ID of the to be created Category.
      * @param name The name of the to be created Category.
      */
-    public Category(long id, String name) {
-        this.id = id;
+    public Category(String name) {
         this.name = name;
-    }
-
-    /**
-     * Method used to retrieve the id of Category.
-     *
-     * @return The id of Category.
-     */
-    public long getID() {
-        return id;
-    }
-
-    /**
-     * Method used to update the id of Category.
-     *
-     * @param id The new id of Category.
-     */
-    public void setID(long id) {
-        this.id = id;
     }
 
     /**
