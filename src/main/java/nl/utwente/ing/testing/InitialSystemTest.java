@@ -169,7 +169,7 @@ public class InitialSystemTest {
         transaction.setType("xxx");
         given().contentType("application/json").
                 body(transaction).header("X-session-ID", sessionID).
-                put("/api/v1/transactions").then().statusCode(405);
+                put("/api/v1/transactions/" + transactionID).then().statusCode(405);
     }
 
     @Test
@@ -192,7 +192,7 @@ public class InitialSystemTest {
 
 
 
-    
+
     public static String getNewSessionID() {
         String responseString = when().post("/api/v1/sessions").
                 then().contentType(ContentType.JSON).
