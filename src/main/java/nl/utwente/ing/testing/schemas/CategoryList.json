@@ -2,11 +2,15 @@
   "title": "CategoryList",
   "type": "array",
   "items": {
-    "id": {
-      "type": "integer"
-    },
-    "name": {
-      "type": "string"
+    "title": "Category",
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "integer"
+      },
+      "name": {
+        "type": "string"
+      }
     }
   }
 }

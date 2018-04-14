@@ -12,7 +12,7 @@
         "type": "string"
       },
       "amount": {
-        "type": "float"
+        "type": "number"
       },
       "externalIBAN": {
         "type": "string"
