@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import static io.restassured.RestAssured.*;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
+import static nl.utwente.ing.testing.InitialSystemTest.getNewSessionID;
 
 
 public class SchemaTest {
@@ -14,8 +15,7 @@ public class SchemaTest {
 
     @BeforeClass
     public static void getSessionID() {
-        sessionID = get("/api/v1/sessions").asString();
-        System.out.println(sessionID);
+        sessionID = getNewSessionID();
     }
 
     @Test
@@ -24,7 +24,7 @@ public class SchemaTest {
         when().
                 get("/api/v1/transactions?session_id=" + sessionID).
                 then().
-                assertThat().body(matchesJsonSchemaInClasspath("Transaction.json"));
+                assertThat().body(matchesJsonSchemaInClasspath("nl/utwente/ing/testing/schemas/Transaction.json"));
 
     }
 
@@ -34,7 +34,7 @@ public class SchemaTest {
         when().
                 post("/api/v1/transactions?session_id=" + sessionID).
                 then().
-                assertThat().body(matchesJsonSchemaInClasspath("Transaction.json"));
+                assertThat().body(matchesJsonSchemaInClasspath("nl/utwente/ing/testing/schemas/Transaction.json"));
 
     }
 
