@@ -52,7 +52,7 @@ public class SchemaTest {
     public void test_GET_transaction_ID_JSON_schema() {
 
         when().
-                post("/api/v1/transactions/" + transaction_1_ID.toString() + "?session_id=" + sessionID).
+                get("/api/v1/transactions/" + transaction_1_ID.toString() + "?session_id=" + sessionID).
                 then().
                 assertThat().body(matchesJsonSchemaInClasspath("nl/utwente/ing/testing/schemas/Transaction.json"));
 
@@ -72,7 +72,7 @@ public class SchemaTest {
     public void test_GET_category_ID_JSON_schema() {
 
         when().
-                post("/api/v1/categories/" + category_1_ID.toString() + "?session_id=" + sessionID).
+                get("/api/v1/categories/" + category_1_ID.toString() + "?session_id=" + sessionID).
                 then().
                 assertThat().body(matchesJsonSchemaInClasspath("nl/utwente/ing/testing/schemas/Category.json"));
 
