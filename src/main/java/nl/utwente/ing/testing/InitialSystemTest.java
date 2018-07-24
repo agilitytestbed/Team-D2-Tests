@@ -2,6 +2,7 @@ package nl.utwente.ing.testing;
 
 import io.restassured.http.ContentType;
 import nl.utwente.ing.testing.bean.Category;
+import nl.utwente.ing.testing.bean.CategoryRule;
 import nl.utwente.ing.testing.bean.Transaction;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -42,13 +43,13 @@ public class InitialSystemTest {
         String newSessionID = getNewSessionID();
         ArrayList<Transaction> transactionList = new ArrayList<>();
         transactionList.add(new Transaction("2015-04-13T08:06:10.000Z",
-                100, "NL01RABO0300065264", "deposit"));
+                100, "test", "NL01RABO0300065264", "deposit"));
         transactionList.add(new Transaction("2016-04-13T08:06:10.000Z",
-                200, "NL02RABO0300065264", "withdrawal"));
+                200, "test", "NL02RABO0300065264", "withdrawal"));
         transactionList.add(new Transaction("2017-04-13T08:06:10.000Z",
-                300, "NL03RABO0300065264", "deposit"));
+                300, "test", "NL03RABO0300065264", "deposit"));
         transactionList.add(new Transaction("2018-04-13T08:06:10.000Z",
-                400, "NL04RABO0300065264", "withdrawal"));
+                400, "test", "NL04RABO0300065264", "withdrawal"));
         for (Transaction transaction : transactionList) {
             postTransaction(newSessionID, transaction);
         }
@@ -62,6 +63,7 @@ public class InitialSystemTest {
             assertThat(responseList.size(), equalTo(1));
             assertThat((String) responseList.get(0).get("date"), equalTo(transactionList.get(i).getDate()));
             assertThat((Float) responseList.get(0).get("amount"), equalTo(transactionList.get(i).getAmount()));
+            assertThat((String) responseList.get(0).get("description"), equalTo(transactionList.get(i).getDescription()));
             assertThat((String) responseList.get(0).get("externalIBAN"), equalTo(transactionList.get(i).getExternalIBAN()));
             assertThat((String) responseList.get(0).get("type"), equalTo(transactionList.get(i).getType()));
         }
@@ -73,6 +75,7 @@ public class InitialSystemTest {
         for (int i = 0; i < transactionList.size(); i++) {
             assertThat((String) responseList.get(i).get("date"), equalTo(transactionList.get(i).getDate()));
             assertThat((Float) responseList.get(i).get("amount"), equalTo(transactionList.get(i).getAmount()));
+            assertThat((String) responseList.get(0).get("description"), equalTo(transactionList.get(i).getDescription()));
             assertThat((String) responseList.get(i).get("externalIBAN"), equalTo(transactionList.get(i).getExternalIBAN()));
             assertThat((String) responseList.get(i).get("type"), equalTo(transactionList.get(i).getType()));
         }
@@ -81,7 +84,7 @@ public class InitialSystemTest {
     @Test
     public void testPostTransaction() {
         Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
-                100, "NL39RABO0300065264", "deposit");
+                100, "test", "NL39RABO0300065264", "deposit");
 
         // Test invalid session ID status code
         given().contentType("application/json").
@@ -99,6 +102,7 @@ public class InitialSystemTest {
                 body("$", hasKey("id")).
                 body("date", equalTo("2018-04-13T08:06:10.000Z")).
                 body("amount", equalTo((float) 100)).
+                body("description", equalTo("test")).
                 body("externalIBAN", equalTo("NL39RABO0300065264")).
                 body("type", equalTo("deposit"));
 
@@ -120,7 +124,7 @@ public class InitialSystemTest {
 
         // Test valid transaction response and status code
         Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
-                100, "NL39RABO0300065264", "deposit");
+                100, "test", "NL39RABO0300065264", "deposit");
         long transactionID = postTransaction(transaction);
         given().header("X-session-ID", sessionID).
                 get("/api/v1/transactions/" + transactionID).
@@ -128,6 +132,7 @@ public class InitialSystemTest {
                 body("$", hasKey("id")).
                 body("date", equalTo("2018-04-13T08:06:10.000Z")).
                 body("amount", equalTo((float) 100)).
+                body("description", equalTo("test")).
                 body("externalIBAN", equalTo("NL39RABO0300065264")).
                 body("type", equalTo("deposit"));
     }
@@ -135,7 +140,7 @@ public class InitialSystemTest {
     @Test
     public void testPutTransaction() {
         Transaction transaction = new Transaction("2015-04-13T08:06:10.000Z",
-                75, "NL01RABO0300065264", "withdrawal");
+                75, "test", "NL01RABO0300065264", "withdrawal");
 
         // Test invalid session ID status code
         given().contentType("application/json").
@@ -162,6 +167,7 @@ public class InitialSystemTest {
                 body("$", hasKey("id")).
                 body("date", equalTo("2013-04-13T08:06:10.000Z")).
                 body("amount", equalTo((float) 225)).
+                body("description", equalTo("test")).
                 body("externalIBAN", equalTo("NL02RABO0300065264")).
                 body("type", equalTo("deposit"));
 
@@ -183,7 +189,7 @@ public class InitialSystemTest {
 
         // Test valid transaction status code
         Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
-                100, "NL39RABO0300065264", "deposit");
+                100, "test", "NL39RABO0300065264", "deposit");
         long transactionID = postTransaction(transaction);
         given().header("X-session-ID", sessionID).delete("/api/v1/transactions/" + transactionID).
                 then().statusCode(204);
@@ -192,7 +198,7 @@ public class InitialSystemTest {
     @Test
     public void testAssignCategoryToTransaction() {
         Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
-                100, "NL39RABO0300065264", "deposit");
+                100, "test", "NL39RABO0300065264", "deposit");
         Category category1 = new Category("Groceries");
         Category category2 = new Category("Rent");
         long transactionID = postTransaction(transaction);
@@ -373,7 +379,7 @@ public class InitialSystemTest {
     public void categoryAtGetTransactions() {
         // Used to test whether the category is correctly displayed in the getTransactions request
         Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
-                100, "NL39RABO0300065264", "deposit");
+                100, "test", "NL39RABO0300065264", "deposit");
         Category category = new Category("Groceries");
         String newSessionID = getNewSessionID();
         long transactionID = postTransaction(newSessionID, transaction);
@@ -385,6 +391,7 @@ public class InitialSystemTest {
         Map<String, ?> responseMap = (Map<String, ?>) ((ArrayList<Map<String, ?>>) from(responseString).get("")).get(0);
         assertThat((String) responseMap.get("date"), equalTo(transaction.getDate()));
         assertThat((Float) responseMap.get("amount"), equalTo(transaction.getAmount()));
+        assertThat((String) responseMap.get("description"), equalTo(transaction.getDescription()));
         assertThat((String) responseMap.get("externalIBAN"), equalTo(transaction.getExternalIBAN()));
         assertThat((String) responseMap.get("type"), equalTo(transaction.getType()));
         responseMap = (Map<String, ?>) responseMap.get("category");
@@ -396,7 +403,7 @@ public class InitialSystemTest {
     public void testCategoryAtGetTransaction() {
         // Used to test whether the category is correctly displayed in the getTransaction request
         Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
-                100, "NL39RABO0300065264", "deposit");
+                100, "test", "NL39RABO0300065264", "deposit");
         Category category = new Category("Groceries");
         long transactionID = postTransaction(sessionID, transaction);
         long categoryID = postCategory(sessionID, category);
@@ -407,6 +414,7 @@ public class InitialSystemTest {
                 body("$", hasKey("id")).
                 body("date", equalTo("2018-04-13T08:06:10.000Z")).
                 body("amount", equalTo((float) 100)).
+                body("description", equalTo("test")).
                 body("externalIBAN", equalTo("NL39RABO0300065264")).
                 body("type", equalTo("deposit")).
                 contentType(ContentType.JSON).extract().response().asString();
@@ -419,7 +427,7 @@ public class InitialSystemTest {
     public void testCategoryAtPutTransaction() {
         // Used to test whether the category is correctly displayed in the putTransaction request
         Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
-                100, "NL39RABO0300065264", "deposit");
+                100, "test", "NL39RABO0300065264", "deposit");
         Category category = new Category("Groceries");
         long transactionID = postTransaction(sessionID, transaction);
         long categoryID = postCategory(sessionID, category);
@@ -431,6 +439,7 @@ public class InitialSystemTest {
                 body("$", hasKey("id")).
                 body("date", equalTo("2018-04-13T08:06:10.000Z")).
                 body("amount", equalTo((float) 100)).
+                body("description", equalTo("test")).
                 body("externalIBAN", equalTo("NL39RABO0300065264")).
                 body("type", equalTo("deposit")).
                 contentType(ContentType.JSON).extract().response().asString();
@@ -446,13 +455,13 @@ public class InitialSystemTest {
         Category category2 = new Category("Rent");
         ArrayList<Transaction> transactionList = new ArrayList<>();
         transactionList.add(new Transaction("2015-04-13T08:06:10.000Z",
-                100, "NL01RABO0300065264", "deposit"));
+                100, "test", "NL01RABO0300065264", "deposit"));
         transactionList.add(new Transaction("2016-04-13T08:06:10.000Z",
-                200, "NL02RABO0300065264", "withdrawal"));
+                200, "test", "NL02RABO0300065264", "withdrawal"));
         transactionList.add(new Transaction("2017-04-13T08:06:10.000Z",
-                300, "NL03RABO0300065264", "deposit"));
+                300, "test", "NL03RABO0300065264", "deposit"));
         transactionList.add(new Transaction("2018-04-13T08:06:10.000Z",
-                400, "NL04RABO0300065264", "withdrawal"));
+                400, "test", "NL04RABO0300065264", "withdrawal"));
         String newSessionID = getNewSessionID();
         long categoryID1 = postCategory(newSessionID, category1);
         long categoryID2 = postCategory(newSessionID, category2);
@@ -490,7 +499,6 @@ public class InitialSystemTest {
             assertThat(new Long((Integer) responseMap.get("id")), equalTo(categoryID2));
         }
     }
-
 
 
     // Helper methods (not actual tests) down here
@@ -535,6 +543,19 @@ public class InitialSystemTest {
         given().header("X-session-ID", sessionID).
                 contentType("application/json").body(categoryIDMap).
                 patch("/api/v1/transactions/" + transactionID + "/category");
+    }
+
+    public static Long postCategoryRule(CategoryRule categoryRule) {
+        return postCategoryRule(sessionID, categoryRule);
+    }
+
+    public static Long postCategoryRule(String sessionID, CategoryRule categoryRule) {
+        String responseString = given().contentType("application/json").
+                body(categoryRule).header("X-session-ID", sessionID).
+                post("/api/v1/CategoryRules").
+                then().contentType(ContentType.JSON).extract().response().asString();
+        Map<String, ?> responseMap = from(responseString).get("");
+        return new Long((Integer) responseMap.get("id"));
     }
 
 }
