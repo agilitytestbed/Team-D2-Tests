@@ -1,0 +1,30 @@
+{
+  "title": "CategoryRule",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "description": {
+      "type": "string"
+    },
+    "iBAN": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "deposit",
+        "withdrawal"
+      ]
+    },
+    "categoryID": {
+      "type": "integer"
+    },
+    "applyOnHistory": {
+      "type": "boolean"
+    }
+  }
+}
+
+

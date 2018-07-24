@@ -39,7 +39,7 @@ public class SchemaTest {
         getCategory_2_ID = postCategory(sessionID, category_2);
         assignCategoryToTransaction(sessionID, transaction_1_ID, category_1_ID);
         assignCategoryToTransaction(sessionID, transaction_2_ID, getCategory_2_ID);
-        getCategoryRule_1_ID = postCategoryRule(categoryRule_1);
+        getCategoryRule_1_ID = postCategoryRule(sessionID, categoryRule_1);
 
     }
 
