@@ -15,10 +15,12 @@ import static io.restassured.RestAssured.*;
 import static io.restassured.path.json.JsonPath.from;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static nl.utwente.ing.testing.HelperFunctions.*;
 
 public class InitialSystemTest {
 
     private static String sessionID;
+
 
     @BeforeAll
     public static void setup() {
@@ -28,7 +30,7 @@ public class InitialSystemTest {
     @Test
     public void testSessionIDRetrieval() {
         // Test status code and that body contains id field
-        when().post("/api/v1/sessions").
+        when().post(URI_PREFIX + "/sessions").
                 then().statusCode(201).
                 body("$", hasKey("id"));
     }
@@ -36,8 +38,8 @@ public class InitialSystemTest {
     @Test
     public void testGetTransactions() {
         // Test invalid session ID status code
-        when().get("/api/v1/transactions").then().statusCode(401);
-        given().header("X-session-ID", "A1B2C3D4E5").get("/api/v1/transactions").then().statusCode(401);
+        when().get(URI_PREFIX + "/transactions").then().statusCode(401);
+        given().header("X-session-ID", "A1B2C3D4E5").get(URI_PREFIX + "/transactions").then().statusCode(401);
 
         // Test responses and status codes
         String newSessionID = getNewSessionID();
@@ -57,7 +59,7 @@ public class InitialSystemTest {
         for (int i = 0; i < transactionList.size(); i++) {
             String responseString = given().header("X-session-ID", newSessionID).
                     queryParam("limit", 1).queryParam("offset", i).
-                    get("/api/v1/transactions").
+                    get(URI_PREFIX + "/transactions").
                     then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
             ArrayList<Map<String, ?>> responseList = from(responseString).get("");
             assertThat(responseList.size(), equalTo(1));
@@ -68,7 +70,7 @@ public class InitialSystemTest {
             assertThat((String) responseList.get(0).get("type"), equalTo(transactionList.get(i).getType()));
         }
         String responseString = given().header("X-session-ID", newSessionID).
-                get("/api/v1/transactions").
+                get(URI_PREFIX + "/transactions").
                 then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
         ArrayList<Map<String, ?>> responseList = from(responseString).get("");
         assertThat(responseList.size(), equalTo(4));
@@ -89,15 +91,15 @@ public class InitialSystemTest {
         // Test invalid session ID status code
         given().contentType("application/json").
                 body(transaction).
-                post("/api/v1/transactions").then().statusCode(401);
+                post(URI_PREFIX + "/transactions").then().statusCode(401);
         given().contentType("application/json").
                 body(transaction).header("X-session-ID", "A1B2C3D4E5").
-                post("/api/v1/transactions").then().statusCode(401);
+                post(URI_PREFIX + "/transactions").then().statusCode(401);
 
         // Test valid transaction post response and status code
         given().contentType("application/json").
                 body(transaction).header("X-session-ID", sessionID).
-                post("/api/v1/transactions").
+                post(URI_PREFIX + "/transactions").
                 then().statusCode(201).
                 body("$", hasKey("id")).
                 body("date", equalTo("2018-04-13T08:06:10.000Z")).
@@ -110,24 +112,24 @@ public class InitialSystemTest {
         transaction.setType("xxx");
         given().contentType("application/json").
                 body(transaction).header("X-session-ID", sessionID).
-                post("/api/v1/transactions").then().statusCode(405);
+                post(URI_PREFIX + "/transactions").then().statusCode(405);
     }
 
     @Test
     public void testGetTransaction() {
         // Test invalid session ID status code
-        when().get("/api/v1/transactions/1").then().statusCode(401);
-        given().header("X-session-ID", "A1B2C3D4E5").get("/api/v1/transactions/1").then().statusCode(401);
+        when().get(URI_PREFIX + "/transactions/1").then().statusCode(401);
+        given().header("X-session-ID", "A1B2C3D4E5").get(URI_PREFIX + "/transactions/1").then().statusCode(401);
 
         // Test invalid transaction ID status code
-        given().header("X-session-ID", sessionID).get("/api/v1/transactions/8381237").then().statusCode(404);
+        given().header("X-session-ID", sessionID).get(URI_PREFIX + "/transactions/8381237").then().statusCode(404);
 
         // Test valid transaction response and status code
         Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
                 100, "test", "NL39RABO0300065264", "deposit");
-        long transactionID = postTransaction(transaction);
+        long transactionID = postTransaction(sessionID, transaction);
         given().header("X-session-ID", sessionID).
-                get("/api/v1/transactions/" + transactionID).
+                get(URI_PREFIX + "/transactions/" + transactionID).
                 then().statusCode(200).
                 body("$", hasKey("id")).
                 body("date", equalTo("2018-04-13T08:06:10.000Z")).
@@ -145,24 +147,24 @@ public class InitialSystemTest {
         // Test invalid session ID status code
         given().contentType("application/json").
                 body(transaction).
-                put("/api/v1/transactions/1").then().statusCode(401);
+                put(URI_PREFIX + "/transactions/1").then().statusCode(401);
         given().contentType("application/json").
                 body(transaction).header("X-session-ID", "A1B2C3D4E5").
-                put("/api/v1/transactions/1").then().statusCode(401);
+                put(URI_PREFIX + "/transactions/1").then().statusCode(401);
 
         // Test invalid transaction ID status code
         given().contentType("application/json").body(transaction).header("X-session-ID", sessionID).
-                put("/api/v1/transactions/8381237").then().statusCode(404);
+                put(URI_PREFIX + "/transactions/8381237").then().statusCode(404);
 
         // Test valid transaction put response and status code
-        long transactionID = postTransaction(transaction);
+        long transactionID = postTransaction(sessionID, transaction);
         transaction.setDate("2013-04-13T08:06:10.000Z");
         transaction.setAmount(225);
         transaction.setExternalIBAN("NL02RABO0300065264");
         transaction.setType("deposit");
         given().contentType("application/json").
                 body(transaction).header("X-session-ID", sessionID).
-                put("/api/v1/transactions/" + transactionID).
+                put(URI_PREFIX + "/transactions/" + transactionID).
                 then().statusCode(200).
                 body("$", hasKey("id")).
                 body("date", equalTo("2013-04-13T08:06:10.000Z")).
@@ -175,23 +177,23 @@ public class InitialSystemTest {
         transaction.setType("xxx");
         given().contentType("application/json").
                 body(transaction).header("X-session-ID", sessionID).
-                put("/api/v1/transactions/" + transactionID).then().statusCode(405);
+                put(URI_PREFIX + "/transactions/" + transactionID).then().statusCode(405);
     }
 
     @Test
     public void testDeleteTransaction() {
         // Test invalid session ID status code
-        when().delete("/api/v1/transactions/1").then().statusCode(401);
-        given().header("X-session-ID", "A1B2C3D4E5").delete("/api/v1/transactions/1").then().statusCode(401);
+        when().delete(URI_PREFIX + "/transactions/1").then().statusCode(401);
+        given().header("X-session-ID", "A1B2C3D4E5").delete(URI_PREFIX + "/transactions/1").then().statusCode(401);
 
         // Test invalid transaction ID status code
-        given().header("X-session-ID", sessionID).delete("/api/v1/transactions/8381237").then().statusCode(404);
+        given().header("X-session-ID", sessionID).delete(URI_PREFIX + "/transactions/8381237").then().statusCode(404);
 
         // Test valid transaction status code
         Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
                 100, "test", "NL39RABO0300065264", "deposit");
-        long transactionID = postTransaction(transaction);
-        given().header("X-session-ID", sessionID).delete("/api/v1/transactions/" + transactionID).
+        long transactionID = postTransaction(sessionID, transaction);
+        given().header("X-session-ID", sessionID).delete(URI_PREFIX + "/transactions/" + transactionID).
                 then().statusCode(204);
     }
 
@@ -201,23 +203,23 @@ public class InitialSystemTest {
                 100, "test", "NL39RABO0300065264", "deposit");
         Category category1 = new Category("Groceries");
         Category category2 = new Category("Rent");
-        long transactionID = postTransaction(transaction);
-        long categoryID1 = postCategory(category1);
-        long categoryID2 = postCategory(category2);
+        long transactionID = postTransaction(sessionID, transaction);
+        long categoryID1 = postCategory(sessionID, category1);
+        long categoryID2 = postCategory(sessionID, category2);
         Map<String, Long> categoryIDMap = new HashMap<>();
         categoryIDMap.put("category_id", categoryID1);
 
         // Test invalid session ID status code
         given().contentType("application/json").body(categoryIDMap).
-                patch("/api/v1/transactions/1/category").then().statusCode(401);
+                patch(URI_PREFIX + "/transactions/1/category").then().statusCode(401);
         given().header("X-session-ID", "A1B2C3D4E5").
                 contentType("application/json").body(categoryIDMap).
-                patch("/api/v1/transactions/1/category").then().statusCode(401);
+                patch(URI_PREFIX + "/transactions/1/category").then().statusCode(401);
 
         // Test valid assignment
         String responseString = given().header("X-session-ID", sessionID).
                 contentType("application/json").body(categoryIDMap).
-                patch("/api/v1/transactions/" + transactionID + "/category").
+                patch(URI_PREFIX + "/transactions/" + transactionID + "/category").
                 then().statusCode(200).
                 contentType(ContentType.JSON).extract().response().asString();
         Map<String, ?> responseMap = from(responseString).get("category");
@@ -226,7 +228,7 @@ public class InitialSystemTest {
         categoryIDMap.put("category_id", categoryID2);
         responseString = given().header("X-session-ID", sessionID).
                 contentType("application/json").body(categoryIDMap).
-                patch("/api/v1/transactions/" + transactionID + "/category").
+                patch(URI_PREFIX + "/transactions/" + transactionID + "/category").
                 then().statusCode(200).
                 contentType(ContentType.JSON).extract().response().asString();
         responseMap = from(responseString).get("category");
@@ -236,20 +238,20 @@ public class InitialSystemTest {
         // Test invalid transaction ID and invalid category ID
         given().header("X-session-ID", sessionID).
                 contentType("application/json").body(categoryIDMap).
-                patch("/api/v1/transactions/7183291/category").
+                patch(URI_PREFIX + "/transactions/7183291/category").
                 then().statusCode(404);
         categoryIDMap.put("category_id", new Long(7183291));
         given().header("X-session-ID", sessionID).
                 contentType("application/json").body(categoryIDMap).
-                patch("/api/v1/transactions/" + transactionID + "/category").
+                patch(URI_PREFIX + "/transactions/" + transactionID + "/category").
                 then().statusCode(404);
     }
 
     @Test
     public void testGetCategories() {
         // Test invalid session ID status code
-        when().get("/api/v1/categories").then().statusCode(401);
-        given().header("X-session-ID", "A1B2C3D4E5").get("/api/v1/categories").then().statusCode(401);
+        when().get(URI_PREFIX + "/categories").then().statusCode(401);
+        given().header("X-session-ID", "A1B2C3D4E5").get(URI_PREFIX + "/categories").then().statusCode(401);
 
         // Test responses and status codes
         String newSessionID = getNewSessionID();
@@ -265,14 +267,14 @@ public class InitialSystemTest {
         for (int i = 0; i < categoryList.size(); i++) {
             String responseString = given().header("X-session-ID", newSessionID).
                     queryParam("limit", 1).queryParam("offset", i).
-                    get("/api/v1/categories").
+                    get(URI_PREFIX + "/categories").
                     then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
             ArrayList<Map<String, ?>> responseList = from(responseString).get("");
             assertThat(responseList.size(), equalTo(1));
             assertThat((String) responseList.get(0).get("name"), equalTo(categoryList.get(i).getName()));
         }
         String responseString = given().header("X-session-ID", newSessionID).
-                get("/api/v1/categories").
+                get(URI_PREFIX + "/categories").
                 then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
         ArrayList<Map<String, ?>> responseList = from(responseString).get("");
         assertThat(responseList.size(), equalTo(4));
@@ -288,15 +290,15 @@ public class InitialSystemTest {
         // Test invalid session ID status code
         given().contentType("application/json").
                 body(category).
-                post("/api/v1/categories").then().statusCode(401);
+                post(URI_PREFIX + "/categories").then().statusCode(401);
         given().contentType("application/json").
                 body(category).header("X-session-ID", "A1B2C3D4E5").
-                post("/api/v1/categories").then().statusCode(401);
+                post(URI_PREFIX + "/categories").then().statusCode(401);
 
         // Test valid category post response and status code
         given().contentType("application/json").
                 body(category).header("X-session-ID", sessionID).
-                post("/api/v1/categories").
+                post(URI_PREFIX + "/categories").
                 then().statusCode(201).
                 body("$", hasKey("id")).
                 body("name", equalTo("Groceries"));
@@ -305,23 +307,23 @@ public class InitialSystemTest {
         category.setName(null);
         given().contentType("application/json").
                 body(category).header("X-session-ID", sessionID).
-                post("/api/v1/categories").then().statusCode(405);
+                post(URI_PREFIX + "/categories").then().statusCode(405);
     }
 
     @Test
     public void testGetCategory() {
         // Test invalid session ID status code
-        when().get("/api/v1/categories/1").then().statusCode(401);
-        given().header("X-session-ID", "A1B2C3D4E5").get("/api/v1/categories/1").then().statusCode(401);
+        when().get(URI_PREFIX + "/categories/1").then().statusCode(401);
+        given().header("X-session-ID", "A1B2C3D4E5").get(URI_PREFIX + "/categories/1").then().statusCode(401);
 
         // Test invalid category ID status code
-        given().header("X-session-ID", sessionID).get("/api/v1/categories/8381237").then().statusCode(404);
+        given().header("X-session-ID", sessionID).get(URI_PREFIX + "/categories/8381237").then().statusCode(404);
 
         // Test valid category response and status code
         Category category = new Category("Groceries");
-        long categoryID = postCategory(category);
+        long categoryID = postCategory(sessionID, category);
         given().header("X-session-ID", sessionID).
-                get("/api/v1/categories/" + categoryID).
+                get(URI_PREFIX + "/categories/" + categoryID).
                 then().statusCode(200).
                 body("name", equalTo("Groceries"));
     }
@@ -333,21 +335,21 @@ public class InitialSystemTest {
         // Test invalid session ID status code
         given().contentType("application/json").
                 body(category).
-                put("/api/v1/categories/1").then().statusCode(401);
+                put(URI_PREFIX + "/categories/1").then().statusCode(401);
         given().contentType("application/json").
                 body(category).header("X-session-ID", "A1B2C3D4E5").
-                put("/api/v1/categories/1").then().statusCode(401);
+                put(URI_PREFIX + "/categories/1").then().statusCode(401);
 
         // Test invalid catery ID status code
         given().contentType("application/json").body(category).header("X-session-ID", sessionID).
-                put("/api/v1/categories/8381237").then().statusCode(404);
+                put(URI_PREFIX + "/categories/8381237").then().statusCode(404);
 
         // Test valid category put response and status code
-        long categoryID = postCategory(category);
+        long categoryID = postCategory(sessionID, category);
         category.setName("Rent");
         given().contentType("application/json").
                 body(category).header("X-session-ID", sessionID).
-                put("/api/v1/categories/" + categoryID).
+                put(URI_PREFIX + "/categories/" + categoryID).
                 then().statusCode(200).
                 body("$", hasKey("id")).
                 body("name", equalTo("Rent"));
@@ -356,22 +358,22 @@ public class InitialSystemTest {
         category.setName(null);
         given().contentType("application/json").
                 body(category).header("X-session-ID", sessionID).
-                put("/api/v1/categories/" + categoryID).then().statusCode(405);
+                put(URI_PREFIX + "/categories/" + categoryID).then().statusCode(405);
     }
 
     @Test
     public void deleteCategory() {
         // Test invalid session ID status code
-        when().delete("/api/v1/categories/1").then().statusCode(401);
-        given().header("X-session-ID", "A1B2C3D4E5").delete("/api/v1/categories/1").then().statusCode(401);
+        when().delete(URI_PREFIX + "/categories/1").then().statusCode(401);
+        given().header("X-session-ID", "A1B2C3D4E5").delete(URI_PREFIX + "/categories/1").then().statusCode(401);
 
         // Test invalid category ID status code
-        given().header("X-session-ID", sessionID).delete("/api/v1/categories/8381237").then().statusCode(404);
+        given().header("X-session-ID", sessionID).delete(URI_PREFIX + "/categories/8381237").then().statusCode(404);
 
         // Test valid category status code
         Category category = new Category("Groceries");
-        long categoryID = postCategory(category);
-        given().header("X-session-ID", sessionID).delete("/api/v1/categories/" + categoryID).
+        long categoryID = postCategory(sessionID, category);
+        given().header("X-session-ID", sessionID).delete(URI_PREFIX + "/categories/" + categoryID).
                 then().statusCode(204);
     }
 
@@ -385,7 +387,7 @@ public class InitialSystemTest {
         long transactionID = postTransaction(newSessionID, transaction);
         long categoryID = postCategory(newSessionID, category);
         assignCategoryToTransaction(newSessionID, transactionID, categoryID);
-        String responseString = given().header("X-session-ID", newSessionID).get("/api/v1/transactions").
+        String responseString = given().header("X-session-ID", newSessionID).get(URI_PREFIX + "/transactions").
                 then().statusCode(200).
                 contentType(ContentType.JSON).extract().response().asString();
         Map<String, ?> responseMap = (Map<String, ?>) ((ArrayList<Map<String, ?>>) from(responseString).get("")).get(0);
@@ -409,7 +411,7 @@ public class InitialSystemTest {
         long categoryID = postCategory(sessionID, category);
         assignCategoryToTransaction(sessionID, transactionID, categoryID);
         String responseString = given().header("X-session-ID", sessionID).
-                get("/api/v1/transactions/" + transactionID).
+                get(URI_PREFIX + "/transactions/" + transactionID).
                 then().statusCode(200).
                 body("$", hasKey("id")).
                 body("date", equalTo("2018-04-13T08:06:10.000Z")).
@@ -434,7 +436,7 @@ public class InitialSystemTest {
         assignCategoryToTransaction(sessionID, transactionID, categoryID);
         String responseString = given().header("X-session-ID", sessionID).
                 contentType("application/json").body(transaction).
-                put("/api/v1/transactions/" + transactionID).
+                put(URI_PREFIX + "/transactions/" + transactionID).
                 then().statusCode(200).
                 body("$", hasKey("id")).
                 body("date", equalTo("2018-04-13T08:06:10.000Z")).
@@ -476,7 +478,7 @@ public class InitialSystemTest {
 
         String responseString = given().header("X-session-ID", newSessionID).
                 queryParam("category", "Groceries").
-                get("/api/v1/transactions").
+                get(URI_PREFIX + "/transactions").
                 then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
         ArrayList<Map<String, ?>> responseList = from(responseString).get("");
         assertThat(responseList.size(), equalTo(2));
@@ -488,7 +490,7 @@ public class InitialSystemTest {
         }
         responseString = given().header("X-session-ID", newSessionID).
                 queryParam("category", "Rent").
-                get("/api/v1/transactions").
+                get(URI_PREFIX + "/transactions").
                 then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
         responseList = from(responseString).get("");
         assertThat(responseList.size(), equalTo(2));
@@ -500,62 +502,24 @@ public class InitialSystemTest {
         }
     }
 
+    @Test
+    public void testGetCategoryRule() {
+        // Test invalid session ID status code
+        when().get(URI_PREFIX + "/categoryRules/1").then().statusCode(401);
+        given().header("X-session-ID", "A1B2C3D4E5").get(URI_PREFIX + "/categoryRules/1").then().statusCode(401);
 
-    // Helper methods (not actual tests) down here
+        // Test invalid categoryRule ID status code
+        given().header("X-session-ID", sessionID).get(URI_PREFIX + "/categoryRules/8381237").then().statusCode(404);
 
-    public static String getNewSessionID() {
-        String responseString = when().post("/api/v1/sessions").
-                then().contentType(ContentType.JSON).
-                extract().response().asString();
-        Map<String, ?> responseMap = from(responseString).get("");
-        return (String) responseMap.get("id");
-    }
-
-    public static Long postTransaction(Transaction transaction) {
-        return postTransaction(sessionID, transaction);
-    }
-
-    public static Long postTransaction(String sessionID, Transaction transaction) {
-        String responseString = given().contentType("application/json").
-                body(transaction).header("X-session-ID", sessionID).
-                post("/api/v1/transactions").
-                then().contentType(ContentType.JSON).extract().response().asString();
-        Map<String, ?> responseMap = from(responseString).get("");
-        return new Long((Integer) responseMap.get("id"));
-    }
-
-    public static Long postCategory(Category category) {
-        return postCategory(sessionID, category);
-    }
-
-    public static Long postCategory(String sessionID, Category category) {
-        String responseString = given().contentType("application/json").
-                body(category).header("X-session-ID", sessionID).
-                post("/api/v1/categories").
-                then().contentType(ContentType.JSON).extract().response().asString();
-        Map<String, ?> responseMap = from(responseString).get("");
-        return new Long((Integer) responseMap.get("id"));
-    }
-
-    public static void assignCategoryToTransaction(String sessionID, long transactionID, long categoryID) {
-        Map<String, Long> categoryIDMap = new HashMap<>();
-        categoryIDMap.put("category_id", categoryID);
+        // Test valid categoryRule response and status code
+        Category category = new Category("Groceries");
+        long categoryID = postCategory(sessionID, category);
+        CategoryRule categoryRule = new CategoryRule("test", "000", "", categoryID, false);
+        long categoryRuleID = postCategoryRule(sessionID, categoryRule);
         given().header("X-session-ID", sessionID).
-                contentType("application/json").body(categoryIDMap).
-                patch("/api/v1/transactions/" + transactionID + "/category");
+                get(URI_PREFIX + "/categoryRules/" + categoryRuleID).
+                then().statusCode(200);
     }
 
-    public static Long postCategoryRule(CategoryRule categoryRule) {
-        return postCategoryRule(sessionID, categoryRule);
-    }
-
-    public static Long postCategoryRule(String sessionID, CategoryRule categoryRule) {
-        String responseString = given().contentType("application/json").
-                body(categoryRule).header("X-session-ID", sessionID).
-                post("/api/v1/CategoryRules").
-                then().contentType(ContentType.JSON).extract().response().asString();
-        Map<String, ?> responseMap = from(responseString).get("");
-        return new Long((Integer) responseMap.get("id"));
-    }
 
 }
