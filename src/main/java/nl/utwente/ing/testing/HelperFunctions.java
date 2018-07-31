@@ -54,10 +54,9 @@ public class HelperFunctions {
     public static Long postCategoryRule(String sessionID, CategoryRule categoryRule) {
         String responseString = given().contentType("application/json").
                 body(categoryRule).header("X-session-ID", sessionID).
-                post(URI_PREFIX + "/CategoryRules").
+                post(URI_PREFIX + "/categoryRules").
                 then().contentType(ContentType.JSON).extract().response().asString();
         Map<String, ?> responseMap = from(responseString).get("");
-        System.out.print(responseMap.toString());
         return new Long((Integer) responseMap.get("id"));
     }
 }

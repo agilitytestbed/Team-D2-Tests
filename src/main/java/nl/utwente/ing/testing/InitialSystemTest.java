@@ -521,5 +521,18 @@ public class InitialSystemTest {
                 then().statusCode(200);
     }
 
+    @Test
+    public void testPostCategoryRule() {
+        Category category = new Category("Groceries");
+        long categoryID = postCategory(sessionID, category);
+        CategoryRule categoryRule = new CategoryRule("test", "000", "", categoryID, false);
+        long categoryRuleID = postCategoryRule(sessionID, categoryRule);
+        assertThat(categoryRuleID, equalTo((long) 1));
+        categoryRule = new CategoryRule("test2", "00000", "", categoryID, false);
+        categoryRuleID = postCategoryRule(sessionID, categoryRule);
+        assertThat(categoryRuleID, equalTo((long) 2));
+
+    }
+
 
 }
