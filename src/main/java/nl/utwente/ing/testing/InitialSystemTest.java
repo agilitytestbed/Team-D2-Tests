@@ -526,12 +526,255 @@ public class InitialSystemTest {
         Category category = new Category("Groceries");
         long categoryID = postCategory(sessionID, category);
         CategoryRule categoryRule = new CategoryRule("test", "000", "", categoryID, false);
-        long categoryRuleID = postCategoryRule(sessionID, categoryRule);
-        assertThat(categoryRuleID, equalTo((long) 1));
-        categoryRule = new CategoryRule("test2", "00000", "", categoryID, false);
-        categoryRuleID = postCategoryRule(sessionID, categoryRule);
-        assertThat(categoryRuleID, equalTo((long) 2));
 
+        // Test valid category post response and status code
+        given().contentType("application/json").
+                body(categoryRule).header("X-session-ID", sessionID).
+                post(URI_PREFIX + "/categoryRules").
+                then().statusCode(201).
+                body("$", hasKey("id")).
+                body("description", equalTo("test")).
+                body("iBAN", equalTo("000")).
+                body("type", equalTo("")).
+                body("category_id", equalTo((int) categoryID)).
+                body("applyOnHistory", equalTo(false));
+
+        // Test invalid input status code
+        categoryRule.setDescription(null);
+        given().contentType("application/json").
+                body(categoryRule).header("X-session-ID", sessionID).
+                put(URI_PREFIX + "/categoryRules").then().statusCode(405);
+
+
+    }
+
+    @Test
+    public void testGetCategoryRules() {
+        // Test invalid session ID status code
+        when().get(URI_PREFIX + "/categoryRules").then().statusCode(401);
+        given().header("X-session-ID", "A1B2C3D4E5").get(URI_PREFIX + "/categoryRules").then().statusCode(401);
+
+        // Test responses and status codes
+        Category category = new Category("Groceries");
+        long categoryID = postCategory(sessionID, category);
+        ArrayList<CategoryRule> categoryRuleList = new ArrayList<>();
+        categoryRuleList.add(new CategoryRule("test1", "000", "", categoryID, false));
+        categoryRuleList.add(new CategoryRule("test2", "ABN000", "", categoryID, true));
+        categoryRuleList.add(new CategoryRule("test3", "123", "deposit", categoryID, true));
+        categoryRuleList.add(new CategoryRule("test4", "ING", "withdrawal", categoryID, false));
+        for (CategoryRule c : categoryRuleList) {
+            postCategoryRule(sessionID, c);
+        }
+
+        String responseString = given().header("X-session-ID", sessionID).
+                get(URI_PREFIX + "/categoryRules").
+                then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
+        ArrayList<Map<String, ?>> responseList = from(responseString).get("");
+        assertThat(responseList.size(), equalTo(4));
+        for (int i = 0; i < categoryRuleList.size(); i++) {
+            assertThat((String) responseList.get(i).get("description"), equalTo(categoryRuleList.get(i).getDescription()));
+            assertThat((String) responseList.get(i).get("iBAN"), equalTo(categoryRuleList.get(i).getiBAN()));
+            assertThat((String) responseList.get(i).get("type"), equalTo(categoryRuleList.get(i).getType()));
+            assertThat(new Long((Integer) responseList.get(i).get("category_id")), equalTo(categoryRuleList.get(i).getCategory_id()));
+            assertThat((Boolean) responseList.get(i).get("applyOnHistory"), equalTo(categoryRuleList.get(i).getApplyOnHistory()));
+        }
+    }
+
+    @Test
+    public void testPutCategoryRule() {
+        Category category1 = new Category("Groceries");
+        long category1ID = postCategory(sessionID, category1);
+        Category category2 = new Category("Utwente");
+        long category2ID = postCategory(sessionID, category2);
+        CategoryRule categoryRule = new CategoryRule("test", "123", "deposit", category1ID, false);
+        long categoryRuleID = postCategoryRule(sessionID, categoryRule);
+
+        // Test invalid session ID status code
+        given().contentType("application/json").
+                body(categoryRule).
+                put(URI_PREFIX + "/categoryRules/1").then().statusCode(401);
+        given().contentType("application/json").
+                body(categoryRule).header("X-session-ID", "A1B2C3D4E5").
+                put(URI_PREFIX + "/categoryRules/1").then().statusCode(401);
+
+        // Test invalid categoryRule ID status code
+        given().contentType("application/json").body(categoryRule).header("X-session-ID", sessionID).
+                put(URI_PREFIX + "/categoryRules/8381237").then().statusCode(404);
+
+        // Test valid categoryRule put response and status code
+        categoryRule.setDescription("nottest");
+        categoryRule.setiBAN("456");
+        categoryRule.setType("");
+        categoryRule.setCategory_id(category2ID);
+        categoryRule.setApplyOnHistory(true);
+
+        given().contentType("application/json").
+                body(categoryRule).header("X-session-ID", sessionID).
+                put(URI_PREFIX + "/categoryRules/" + categoryRuleID).
+                then().statusCode(200).
+                body("$", hasKey("id")).
+                body("description", equalTo("nottest")).
+                body("iBAN", equalTo("456")).
+                body("type", equalTo("")).
+                body("category_id", equalTo((int) category2ID)).
+                body("applyOnHistory", equalTo(false));
+
+
+        // Test invalid input status code
+        categoryRule.setDescription(null);
+        given().contentType("application/json").
+                body(categoryRule).header("X-session-ID", sessionID).
+                put(URI_PREFIX + "/categoryRules/" + categoryRuleID).then().statusCode(405);
+    }
+
+    @Test
+    public void testDeleteCategoryRule() {
+        // Test invalid session ID status code
+        when().delete(URI_PREFIX + "/categoryRules/1").then().statusCode(401);
+        given().header("X-session-ID", "A1B2C3D4E5").delete(URI_PREFIX + "/categoryRules/1").then().statusCode(401);
+
+        // Test invalid categoryRule ID status code
+        given().header("X-session-ID", sessionID).delete(URI_PREFIX + "/categoryRules/8381237").then().statusCode(404);
+
+        // Test valid categoryRule status code
+        Category category = new Category("Groceries");
+        long categoryID = postCategory(sessionID, category);
+        CategoryRule categoryRule = new CategoryRule("test", "123", "deposit", categoryID, false);
+        long categoryRuleID = postCategoryRule(sessionID, categoryRule);
+        given().header("X-session-ID", sessionID).delete(URI_PREFIX + "/categoryRules/" + categoryRuleID).
+                then().statusCode(204);
+    }
+
+    @Test
+    public void testCategoryRuleOnTransactionsNoHistory() {
+
+        String sessionID = getNewSessionID();
+
+        Category category = new Category("Groceries");
+        long categoryID = postCategory(sessionID, category);
+        CategoryRule categoryRule = new CategoryRule("test", "000", "", categoryID, false);
+        postCategoryRule(sessionID, categoryRule);
+
+        // test whether the categoryRule correctly assigns categories to new transactions.
+        ArrayList<Transaction> transactionList = new ArrayList<>();
+        transactionList.add(new Transaction("2015-04-13T08:06:10.000Z",
+                100, "test123", "NL01RABO0300065264", "deposit"));
+        transactionList.add(new Transaction("2016-04-13T08:06:10.000Z",
+                200, "test", "NL02RABO0300065264", "withdrawal"));
+        for (Transaction transaction : transactionList) {
+            long transactionID = postTransaction(sessionID, transaction);
+            String responseString = given().header("X-session-ID", sessionID).
+                    contentType("application/json").body(transaction).
+                    put(URI_PREFIX + "/transactions/" + transactionID).
+                    then().statusCode(200).
+                    body("$", hasKey("id")).
+                    body("date", equalTo(transaction.getDate())).
+                    body("amount", equalTo(transaction.getAmount())).
+                    body("description", equalTo(transaction.getDescription())).
+                    body("externalIBAN", equalTo(transaction.getExternalIBAN())).
+                    body("type", equalTo(transaction.getType())).
+                    contentType(ContentType.JSON).extract().response().asString();
+            Map<String, ?> responseMap = from(responseString).get("category");
+            assertThat((String) responseMap.get("name"), equalTo(category.getName()));
+            assertThat(new Long((Integer) responseMap.get("id")), equalTo(categoryID));
+        }
+
+        // test if the categoryRule doesnt apply to not matching transactions
+        transactionList = new ArrayList<>();
+        transactionList.add(new Transaction("2015-04-13T08:06:10.000Z",
+                100, "test", "NL01RABO0311165264", "deposit"));
+        transactionList.add(new Transaction("2016-04-13T08:06:10.000Z",
+                200, "tell", "NL02RABO0300065264", "withdrawal"));
+        for (Transaction transaction : transactionList) {
+            long transactionID = postTransaction(sessionID, transaction);
+            String responseString = given().header("X-session-ID", sessionID).
+                    contentType("application/json").body(transaction).
+                    put(URI_PREFIX + "/transactions/" + transactionID).
+                    then().statusCode(200).
+                    body("$", hasKey("id")).
+                    body("date", equalTo(transaction.getDate())).
+                    body("amount", equalTo(transaction.getAmount())).
+                    body("description", equalTo(transaction.getDescription())).
+                    body("externalIBAN", equalTo(transaction.getExternalIBAN())).
+                    body("type", equalTo(transaction.getType())).
+                    contentType(ContentType.JSON).extract().response().asString();
+            Map<String, ?> responseMap = from(responseString).get("category");
+            assertThat(responseMap, equalTo(null));
+        }
+    }
+
+    @Test
+    public void testCategoryRuleOnTransactionsWithHistory() {
+
+        String sessionID = getNewSessionID();
+
+        // test whether the categoryRule with applyOnHistory = true will apply to these transactions, posted before the rule
+        HashMap<Transaction, Long> transactionMatchingIDHashMap = new HashMap<>();
+        ArrayList<Transaction> transactionList = new ArrayList<>();
+        transactionList.add(new Transaction("2015-04-13T08:06:10.000Z",
+                100, "test", "NL01RABO0300065264", "deposit"));
+        transactionList.add(new Transaction("2016-04-13T08:06:10.000Z",
+                200, "test123", "NL02RABO0300065264", "withdrawal"));
+        for (Transaction transaction : transactionList) {
+            transactionMatchingIDHashMap.put(transaction, postTransaction(sessionID, transaction));
+        }
+
+        // test whether the categoryRule with applyOnHistory = true will not apply to these transactions, posted before the rule
+        HashMap<Transaction, Long> transactionNonMatchingIDHashMap = new HashMap<>();
+        transactionList = new ArrayList<>();
+        transactionList.add(new Transaction("2015-04-13T08:06:10.000Z",
+                100, "twente", "NL01RABO0300065264", "deposit"));
+        transactionList.add(new Transaction("2016-04-13T08:06:10.000Z",
+                200, "test123", "NL02RABO0311165264", "withdrawal"));
+        for (Transaction transaction : transactionList) {
+            transactionNonMatchingIDHashMap.put(transaction, postTransaction(sessionID, transaction));
+        }
+
+
+        Category category = new Category("Rent");
+        long categoryID = postCategory(sessionID, category);
+        category = new Category("Groceries");
+        postCategory(sessionID, category);
+        category.setName("Rent");
+
+        CategoryRule categoryRule = new CategoryRule("test", "000", "", categoryID, true);
+        postCategoryRule(sessionID, categoryRule);
+
+
+        for (Transaction transaction : transactionMatchingIDHashMap.keySet()) {
+            long transactionID = transactionMatchingIDHashMap.get(transaction);
+            String responseString = given().header("X-session-ID", sessionID).
+                    contentType("application/json").body(transaction).
+                    put(URI_PREFIX + "/transactions/" + transactionID).
+                    then().statusCode(200).
+                    body("$", hasKey("id")).
+                    body("date", equalTo(transaction.getDate())).
+                    body("amount", equalTo(transaction.getAmount())).
+                    body("description", equalTo(transaction.getDescription())).
+                    body("externalIBAN", equalTo(transaction.getExternalIBAN())).
+                    body("type", equalTo(transaction.getType())).
+                    contentType(ContentType.JSON).extract().response().asString();
+            Map<String, ?> responseMap = from(responseString).get("category");
+            assertThat((String) responseMap.get("name"), equalTo(category.getName()));
+            assertThat(new Long((Integer) responseMap.get("id")), equalTo(categoryID));
+        }
+
+        for (Transaction transaction : transactionNonMatchingIDHashMap.keySet()) {
+            long transactionID = transactionNonMatchingIDHashMap.get(transaction);
+            String responseString = given().header("X-session-ID", sessionID).
+                    contentType("application/json").body(transaction).
+                    put(URI_PREFIX + "/transactions/" + transactionID).
+                    then().statusCode(200).
+                    body("$", hasKey("id")).
+                    body("date", equalTo(transaction.getDate())).
+                    body("amount", equalTo(transaction.getAmount())).
+                    body("description", equalTo(transaction.getDescription())).
+                    body("externalIBAN", equalTo(transaction.getExternalIBAN())).
+                    body("type", equalTo(transaction.getType())).
+                    contentType(ContentType.JSON).extract().response().asString();
+            Map<String, ?> responseMap = from(responseString).get("category");
+            assertThat(responseMap, equalTo(null));
+        }
     }
 
 
