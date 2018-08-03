@@ -10,6 +10,7 @@ public class Transaction {
 
     private String date;
     private float amount;
+    private String description;
     private String externalIBAN;
     private String type;
 
@@ -26,12 +27,14 @@ public class Transaction {
      *
      * @param date         The date of the to be created Transaction.
      * @param amount       The amount of the to be created Transaction.
+     * @param description  The description of the to be created Transaction.
      * @param externalIBAN The externalIBAN of the to be created Transaction.
      * @param type         The type of the to be created Transaction.
      */
-    public Transaction(String date, float amount, String externalIBAN, String type) {
+    public Transaction(String date, float amount, String description, String externalIBAN, String type) {
         this.date = date;
         this.amount = amount;
+        this.description = description;
         this.externalIBAN = externalIBAN;
         this.type = type;
     }
@@ -70,6 +73,24 @@ public class Transaction {
      */
     public void setAmount(float amount) {
         this.amount = amount;
+    }
+
+    /**
+     * Method used to retrieve the description of Transaction.
+     *
+     * @return The description of Transaction.
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
+     * Method used to update the description of Transaction.
+     *
+     * @param description The new description of Transaction.
+     */
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     /**
