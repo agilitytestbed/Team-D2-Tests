@@ -7,9 +7,9 @@ import nl.utwente.ing.testing.bean.Transaction;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.util.*;
 
 import static io.restassured.RestAssured.*;
 import static io.restassured.path.json.JsonPath.from;
@@ -44,13 +44,13 @@ public class InitialSystemTest {
         // Test responses and status codes
         String newSessionID = getNewSessionID();
         ArrayList<Transaction> transactionList = new ArrayList<>();
-        transactionList.add(new Transaction("2015-04-13T08:06:10.000Z",
+        transactionList.add(new Transaction("2015-04-13T08:06:10.000CEST",
                 100, "test", "NL01RABO0300065264", "deposit"));
-        transactionList.add(new Transaction("2016-04-13T08:06:10.000Z",
+        transactionList.add(new Transaction("2015-04-13T10:06:10.002CEST",
                 200, "test", "NL02RABO0300065264", "withdrawal"));
-        transactionList.add(new Transaction("2017-04-13T08:06:10.000Z",
+        transactionList.add(new Transaction("2015-04-13T12:06:10.003CEST",
                 300, "test", "NL03RABO0300065264", "deposit"));
-        transactionList.add(new Transaction("2018-04-13T08:06:10.000Z",
+        transactionList.add(new Transaction("2015-04-13T01:07:10.004CEST",
                 400, "test", "NL04RABO0300065264", "withdrawal"));
         for (Transaction transaction : transactionList) {
             postTransaction(newSessionID, transaction);
@@ -85,7 +85,7 @@ public class InitialSystemTest {
 
     @Test
     public void testPostTransaction() {
-        Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
+        Transaction transaction = new Transaction("2018-04-13T08:06:10.000CEST",
                 100, "test", "NL39RABO0300065264", "deposit");
 
         // Test invalid session ID status code
@@ -102,7 +102,7 @@ public class InitialSystemTest {
                 post(URI_PREFIX + "/transactions").
                 then().statusCode(201).
                 body("$", hasKey("id")).
-                body("date", equalTo("2018-04-13T08:06:10.000Z")).
+                body("date", equalTo("2018-04-13T08:06:10.000CEST")).
                 body("amount", equalTo((float) 100)).
                 body("description", equalTo("test")).
                 body("externalIBAN", equalTo("NL39RABO0300065264")).
@@ -125,14 +125,14 @@ public class InitialSystemTest {
         given().header("X-session-ID", sessionID).get(URI_PREFIX + "/transactions/8381237").then().statusCode(404);
 
         // Test valid transaction response and status code
-        Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
+        Transaction transaction = new Transaction("2018-04-13T08:06:10.000CEST",
                 100, "test", "NL39RABO0300065264", "deposit");
         long transactionID = postTransaction(sessionID, transaction);
         given().header("X-session-ID", sessionID).
                 get(URI_PREFIX + "/transactions/" + transactionID).
                 then().statusCode(200).
                 body("$", hasKey("id")).
-                body("date", equalTo("2018-04-13T08:06:10.000Z")).
+                body("date", equalTo("2018-04-13T08:06:10.000CEST")).
                 body("amount", equalTo((float) 100)).
                 body("description", equalTo("test")).
                 body("externalIBAN", equalTo("NL39RABO0300065264")).
@@ -141,7 +141,7 @@ public class InitialSystemTest {
 
     @Test
     public void testPutTransaction() {
-        Transaction transaction = new Transaction("2015-04-13T08:06:10.000Z",
+        Transaction transaction = new Transaction("2015-04-13T08:06:10.000CEST",
                 75, "test", "NL01RABO0300065264", "withdrawal");
 
         // Test invalid session ID status code
@@ -158,7 +158,7 @@ public class InitialSystemTest {
 
         // Test valid transaction put response and status code
         long transactionID = postTransaction(sessionID, transaction);
-        transaction.setDate("2013-04-13T08:06:10.000Z");
+        transaction.setDate("2013-04-13T08:06:10.000CEST");
         transaction.setAmount(225);
         transaction.setExternalIBAN("NL02RABO0300065264");
         transaction.setType("deposit");
@@ -167,7 +167,7 @@ public class InitialSystemTest {
                 put(URI_PREFIX + "/transactions/" + transactionID).
                 then().statusCode(200).
                 body("$", hasKey("id")).
-                body("date", equalTo("2013-04-13T08:06:10.000Z")).
+                body("date", equalTo("2013-04-13T08:06:10.000CEST")).
                 body("amount", equalTo((float) 225)).
                 body("description", equalTo("test")).
                 body("externalIBAN", equalTo("NL02RABO0300065264")).
@@ -190,7 +190,7 @@ public class InitialSystemTest {
         given().header("X-session-ID", sessionID).delete(URI_PREFIX + "/transactions/8381237").then().statusCode(404);
 
         // Test valid transaction status code
-        Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
+        Transaction transaction = new Transaction("2018-04-13T08:06:10.000CEST",
                 100, "test", "NL39RABO0300065264", "deposit");
         long transactionID = postTransaction(sessionID, transaction);
         given().header("X-session-ID", sessionID).delete(URI_PREFIX + "/transactions/" + transactionID).
@@ -199,7 +199,7 @@ public class InitialSystemTest {
 
     @Test
     public void testAssignCategoryToTransaction() {
-        Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
+        Transaction transaction = new Transaction("2018-04-13T08:06:10.000CEST",
                 100, "test", "NL39RABO0300065264", "deposit");
         Category category1 = new Category("Groceries");
         Category category2 = new Category("Rent");
@@ -380,7 +380,7 @@ public class InitialSystemTest {
     @Test
     public void categoryAtGetTransactions() {
         // Used to test whether the category is correctly displayed in the getTransactions request
-        Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
+        Transaction transaction = new Transaction("2018-04-13T08:06:10.000CEST",
                 100, "test", "NL39RABO0300065264", "deposit");
         Category category = new Category("Groceries");
         String newSessionID = getNewSessionID();
@@ -404,7 +404,7 @@ public class InitialSystemTest {
     @Test
     public void testCategoryAtGetTransaction() {
         // Used to test whether the category is correctly displayed in the getTransaction request
-        Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
+        Transaction transaction = new Transaction("2018-04-13T08:06:10.000CEST",
                 100, "test", "NL39RABO0300065264", "deposit");
         Category category = new Category("Groceries");
         long transactionID = postTransaction(sessionID, transaction);
@@ -414,7 +414,7 @@ public class InitialSystemTest {
                 get(URI_PREFIX + "/transactions/" + transactionID).
                 then().statusCode(200).
                 body("$", hasKey("id")).
-                body("date", equalTo("2018-04-13T08:06:10.000Z")).
+                body("date", equalTo("2018-04-13T08:06:10.000CEST")).
                 body("amount", equalTo((float) 100)).
                 body("description", equalTo("test")).
                 body("externalIBAN", equalTo("NL39RABO0300065264")).
@@ -428,7 +428,7 @@ public class InitialSystemTest {
     @Test
     public void testCategoryAtPutTransaction() {
         // Used to test whether the category is correctly displayed in the putTransaction request
-        Transaction transaction = new Transaction("2018-04-13T08:06:10.000Z",
+        Transaction transaction = new Transaction("2018-04-13T08:06:10.000CEST",
                 100, "test", "NL39RABO0300065264", "deposit");
         Category category = new Category("Groceries");
         long transactionID = postTransaction(sessionID, transaction);
@@ -439,7 +439,7 @@ public class InitialSystemTest {
                 put(URI_PREFIX + "/transactions/" + transactionID).
                 then().statusCode(200).
                 body("$", hasKey("id")).
-                body("date", equalTo("2018-04-13T08:06:10.000Z")).
+                body("date", equalTo("2018-04-13T08:06:10.000CEST")).
                 body("amount", equalTo((float) 100)).
                 body("description", equalTo("test")).
                 body("externalIBAN", equalTo("NL39RABO0300065264")).
@@ -456,13 +456,13 @@ public class InitialSystemTest {
         Category category1 = new Category("Groceries");
         Category category2 = new Category("Rent");
         ArrayList<Transaction> transactionList = new ArrayList<>();
-        transactionList.add(new Transaction("2015-04-13T08:06:10.000Z",
+        transactionList.add(new Transaction("2015-04-13T08:06:10.000CEST",
                 100, "test", "NL01RABO0300065264", "deposit"));
-        transactionList.add(new Transaction("2016-04-13T08:06:10.000Z",
+        transactionList.add(new Transaction("2016-04-13T08:06:10.001CEST",
                 200, "test", "NL02RABO0300065264", "withdrawal"));
-        transactionList.add(new Transaction("2017-04-13T08:06:10.000Z",
+        transactionList.add(new Transaction("2017-04-13T08:06:10.002CEST",
                 300, "test", "NL03RABO0300065264", "deposit"));
-        transactionList.add(new Transaction("2018-04-13T08:06:10.000Z",
+        transactionList.add(new Transaction("2018-04-13T08:06:10.003CEST",
                 400, "test", "NL04RABO0300065264", "withdrawal"));
         String newSessionID = getNewSessionID();
         long categoryID1 = postCategory(newSessionID, category1);
@@ -657,9 +657,9 @@ public class InitialSystemTest {
 
         // test whether the categoryRule correctly assigns categories to new transactions.
         ArrayList<Transaction> transactionList = new ArrayList<>();
-        transactionList.add(new Transaction("2015-04-13T08:06:10.000Z",
+        transactionList.add(new Transaction("2015-04-13T08:06:10.001CEST",
                 100, "test123", "NL01RABO0300065264", "deposit"));
-        transactionList.add(new Transaction("2016-04-13T08:06:10.000Z",
+        transactionList.add(new Transaction("2016-04-13T08:06:10.002CEST",
                 200, "test", "NL02RABO0300065264", "withdrawal"));
         for (Transaction transaction : transactionList) {
             long transactionID = postTransaction(sessionID, transaction);
@@ -681,9 +681,9 @@ public class InitialSystemTest {
 
         // test if the categoryRule doesnt apply to not matching transactions
         transactionList = new ArrayList<>();
-        transactionList.add(new Transaction("2015-04-13T08:06:10.000Z",
+        transactionList.add(new Transaction("2015-04-13T08:06:10.000CEST",
                 100, "test", "NL01RABO0311165264", "deposit"));
-        transactionList.add(new Transaction("2016-04-13T08:06:10.000Z",
+        transactionList.add(new Transaction("2016-04-13T08:06:10.000CEST",
                 200, "tell", "NL02RABO0300065264", "withdrawal"));
         for (Transaction transaction : transactionList) {
             long transactionID = postTransaction(sessionID, transaction);
@@ -711,9 +711,9 @@ public class InitialSystemTest {
         // test whether the categoryRule with applyOnHistory = true will apply to these transactions, posted before the rule
         HashMap<Transaction, Long> transactionMatchingIDHashMap = new HashMap<>();
         ArrayList<Transaction> transactionList = new ArrayList<>();
-        transactionList.add(new Transaction("2015-04-13T08:06:10.000Z",
+        transactionList.add(new Transaction("2015-04-13T08:06:10.000CEST",
                 100, "test", "NL01RABO0300065264", "deposit"));
-        transactionList.add(new Transaction("2016-04-13T08:06:10.000Z",
+        transactionList.add(new Transaction("2016-04-13T08:06:10.000CEST",
                 200, "test123", "NL02RABO0300065264", "withdrawal"));
         for (Transaction transaction : transactionList) {
             transactionMatchingIDHashMap.put(transaction, postTransaction(sessionID, transaction));
@@ -722,9 +722,9 @@ public class InitialSystemTest {
         // test whether the categoryRule with applyOnHistory = true will not apply to these transactions, posted before the rule
         HashMap<Transaction, Long> transactionNonMatchingIDHashMap = new HashMap<>();
         transactionList = new ArrayList<>();
-        transactionList.add(new Transaction("2015-04-13T08:06:10.000Z",
+        transactionList.add(new Transaction("2015-04-13T08:06:10.001CEST",
                 100, "twente", "NL01RABO0300065264", "deposit"));
-        transactionList.add(new Transaction("2016-04-13T08:06:10.000Z",
+        transactionList.add(new Transaction("2016-04-13T08:06:10.002CEST",
                 200, "test123", "NL02RABO0311165264", "withdrawal"));
         for (Transaction transaction : transactionList) {
             transactionNonMatchingIDHashMap.put(transaction, postTransaction(sessionID, transaction));
@@ -777,5 +777,249 @@ public class InitialSystemTest {
         }
     }
 
+    @Test
+    public void testBalanceHistoryWithoutTransactions() {
+        String newSessionID = getNewSessionID();
+
+        // test invalid sessionID
+        given().header("X-session-ID", "A1B2C3D4E5").
+                get(URI_PREFIX + "/balance/history").
+                then().statusCode(401);
+
+        // test invalid input given
+        given().header("X-session-ID", newSessionID).queryParam("interval", 10).
+                queryParam("intervals", 10).
+                get(URI_PREFIX + "/balance/history").
+                then().statusCode(405);
+        given().header("X-session-ID", newSessionID).queryParam("interval", "minute").
+                queryParam("intervals", 10).
+                get(URI_PREFIX + "/balance/history").
+                then().statusCode(405);
+
+
+        // test default settings without transactions in the system
+        String responseString = given().header("X-session-ID", newSessionID).
+                get(URI_PREFIX + "/balance/history").
+                then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
+        ArrayList<Map<String, ?>> responseList = from(responseString).get("");
+        long previousTimestamp = 0;
+        for (int i = 0; i < responseList.size(); i++) {
+            assertThat((Float) responseList.get(i).get("open"), equalTo(new Float(0)));
+            assertThat((Float) responseList.get(i).get("close"), equalTo(new Float(0)));
+            assertThat((Float) responseList.get(i).get("high"), equalTo(new Float(0)));
+            assertThat((Float) responseList.get(i).get("low"), equalTo(new Float(0)));
+            assertThat((Float) responseList.get(i).get("volume"), equalTo(new Float(0)));
+            long timestamp = new Long((Integer) responseList.get(i).get("timeStamp"));
+            if (previousTimestamp != 0) {
+                long difference = previousTimestamp - timestamp;
+                assertThat(difference > 2400000 && difference < 2700000, equalTo(true));
+            }
+            previousTimestamp = timestamp;
+        }
+
+        // test without transactions in the system
+        String[] intervalTimes = {"hour", "day", "week", "month", "year"};
+        for (int k = 0; k < intervalTimes.length; k++) {
+            responseString = given().header("X-session-ID", newSessionID).queryParam("interval", intervalTimes[k]).
+                    queryParam("intervals", 10).get(URI_PREFIX + "/balance/history").
+                    then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
+            responseList = from(responseString).get("");
+            previousTimestamp = 0;
+            for (int i = 0; i < responseList.size(); i++) {
+                assertThat((Float) responseList.get(i).get("open"), equalTo(new Float(0)));
+                assertThat((Float) responseList.get(i).get("close"), equalTo(new Float(0)));
+                assertThat((Float) responseList.get(i).get("high"), equalTo(new Float(0)));
+                assertThat((Float) responseList.get(i).get("low"), equalTo(new Float(0)));
+                assertThat((Float) responseList.get(i).get("volume"), equalTo(new Float(0)));
+                long timestamp = new Long((Integer) responseList.get(i).get("timeStamp"));
+                if (intervalTimes[k].equals("month")) {
+                    if (previousTimestamp != 0) {
+                        long difference = previousTimestamp - timestamp;
+                        assertThat(difference > 2400000 && difference < 2700000, equalTo(true));
+                    }
+                    previousTimestamp = timestamp;
+                } else if (intervalTimes[k].equals("year")) {
+                    if (previousTimestamp != 0) {
+                        long difference = previousTimestamp - timestamp;
+                        assertThat(difference > 31500000 && difference < 31700000, equalTo(true));
+                    }
+                    previousTimestamp = timestamp;
+                } else if (intervalTimes[k].equals("week")) {
+                    if (previousTimestamp != 0) {
+                        long difference = previousTimestamp - timestamp;
+                        assertThat(difference == 604800, equalTo(true));
+                    }
+                    previousTimestamp = timestamp;
+                } else if (intervalTimes[k].equals("day")) {
+                    if (previousTimestamp != 0) {
+                        long difference = previousTimestamp - timestamp;
+                        assertThat(difference == 86400, equalTo(true));
+                    }
+                    previousTimestamp = timestamp;
+                } else if (intervalTimes[k].equals("hour")) {
+                    if (previousTimestamp != 0) {
+                        long difference = previousTimestamp - timestamp;
+                        assertThat(difference == 3600, equalTo(true));
+                    }
+                    previousTimestamp = timestamp;
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testBalanceHistoryWithTransactions() {
+        String newSessionID = getNewSessionID();
+        ArrayList<Transaction> transactionList = new ArrayList<>();
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+        Calendar c = new GregorianCalendar();
+        dateFormat.setCalendar(c);
+        c.setTimeInMillis(Instant.now().getEpochSecond() * 1000);
+
+        c.add(Calendar.HOUR_OF_DAY, -1);
+        transactionList.add(new Transaction(dateFormat.format(c.getTime()),
+                100, "test", "NL01RABO0300065264", "deposit"));
+
+        c.add(Calendar.HOUR_OF_DAY, -1);
+        transactionList.add(new Transaction(dateFormat.format(c.getTime()),
+                100, "test", "NL02RABO0300065264", "deposit"));
+
+        c.add(Calendar.DAY_OF_YEAR, -1);
+        transactionList.add(new Transaction(dateFormat.format(c.getTime()),
+                100, "test", "NL03RABO0300065264", "deposit"));
+
+        c.add(Calendar.DAY_OF_YEAR, -1);
+        transactionList.add(new Transaction(dateFormat.format(c.getTime()),
+                100, "test", "NL04RABO0300065264", "deposit"));
+
+        c.add(Calendar.WEEK_OF_YEAR, -1);
+        transactionList.add(new Transaction(dateFormat.format(c.getTime()),
+                100, "test", "NL01RABO0300065264", "deposit"));
+
+        c.add(Calendar.WEEK_OF_YEAR, -1);
+        transactionList.add(new Transaction(dateFormat.format(c.getTime()),
+                100, "test", "NL02RABO0300065264", "deposit"));
+
+        c.add(Calendar.MONTH, -1);
+        transactionList.add(new Transaction(dateFormat.format(c.getTime()),
+                100, "test", "NL03RABO0300065264", "deposit"));
+
+        c.add(Calendar.MONTH, -1);
+        transactionList.add(new Transaction(dateFormat.format(c.getTime()),
+                100, "test", "NL04RABO0300065264", "withdrawal"));
+
+        c.add(Calendar.YEAR, -1);
+        transactionList.add(new Transaction(dateFormat.format(c.getTime()),
+                100, "test", "NL03RABO0300065264", "deposit"));
+
+        c.add(Calendar.YEAR, -1);
+        transactionList.add(new Transaction(dateFormat.format(c.getTime()),
+                100, "test", "NL04RABO0300065264", "withdrawal"));
+
+        for (Transaction transaction : transactionList) {
+            postTransaction(newSessionID, transaction);
+        }
+
+
+        float[] hourOpen = {600, 500, 400};
+        float[] hourClose = {600, 600, 500};
+        float[] hourHigh = {600, 600, 500};
+        float[] hourLow = {600, 500, 400};
+        float[] hourVolume = {0, 100, 100};
+
+        float[] dayOpen = {400, 300, 200};
+        float[] dayClose = {600, 400, 300};
+        float[] dayHigh = {600, 400, 300};
+        float[] dayLow = {400, 300, 200};
+        float[] dayVolume = {200, 100, 100 };
+
+        float[] weekOpen = {300, 200, 100};
+        float[] weekClose = {600, 300, 200};
+        float[] weekHigh = {600, 300, 200};
+        float[] weekLow = {300, 200, 100};
+        float[] weekVolume = {300, 100, 100};
+
+        float[] monthOpen = {0, -100, 0};
+        float[] monthClose = {600, 0, -100};
+        float[] monthHigh = {600, 0, 0};
+        float[] monthLow = {0, -100, -100};
+        float[] monthVolume = {600, 100, 100};
+
+        float[] yearOpen = {0, -100, 0};
+        float[] yearClose = {600, 0, -100};
+        float[] yearHigh = {600, 0, 0};
+        float[] yearLow = {-100, -100, -100};
+        float[] yearVolume = {800, 100, 100};
+        String[] intervalTimes = {"hour", "day", "week", "month", "year"};
+
+        for (int k = 0; k < intervalTimes.length; k++) {
+            String responseString = given().header("X-session-ID", newSessionID).queryParam("interval", intervalTimes[k]).
+                    queryParam("intervals", 3).get(URI_PREFIX + "/balance/history").
+                    then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
+            ArrayList<Map<String, ?>> responseList = from(responseString).get("");
+
+            long previousTimestamp = 0;
+            for (int i = 0; i < responseList.size(); i++) {
+                long timestamp = new Long((Integer) responseList.get(i).get("timeStamp"));
+                if (intervalTimes[k].equals("month")) {
+                    assertThat((Float) responseList.get(i).get("open"), equalTo(monthOpen[i]));
+                    assertThat((Float) responseList.get(i).get("close"), equalTo(monthClose[i]));
+                    assertThat((Float) responseList.get(i).get("high"), equalTo(monthHigh[i]));
+                    assertThat((Float) responseList.get(i).get("low"), equalTo(monthLow[i]));
+                    assertThat((Float) responseList.get(i).get("volume"), equalTo(monthVolume[i]));
+                    if (previousTimestamp != 0) {
+                        long difference = previousTimestamp - timestamp;
+                        assertThat(difference > 2400000 && difference < 2700000, equalTo(true));
+                    }
+                    previousTimestamp = timestamp;
+                } else if (intervalTimes[k].equals("year")) {
+                    assertThat((Float) responseList.get(i).get("open"), equalTo(yearOpen[i]));
+                    assertThat((Float) responseList.get(i).get("close"), equalTo(yearClose[i]));
+                    assertThat((Float) responseList.get(i).get("high"), equalTo(yearHigh[i]));
+                    assertThat((Float) responseList.get(i).get("low"), equalTo(yearLow[i]));
+                    assertThat((Float) responseList.get(i).get("volume"), equalTo(yearVolume[i]));
+                    if (previousTimestamp != 0) {
+                        long difference = previousTimestamp - timestamp;
+                        assertThat(difference > 31500000 && difference < 31700000, equalTo(true));
+                    }
+                    previousTimestamp = timestamp;
+                } else if (intervalTimes[k].equals("week")) {
+                    assertThat((Float) responseList.get(i).get("open"), equalTo(weekOpen[i]));
+                    assertThat((Float) responseList.get(i).get("close"), equalTo(weekClose[i]));
+                    assertThat((Float) responseList.get(i).get("high"), equalTo(weekHigh[i]));
+                    assertThat((Float) responseList.get(i).get("low"), equalTo(weekLow[i]));
+                    assertThat((Float) responseList.get(i).get("volume"), equalTo(weekVolume[i]));
+                    if (previousTimestamp != 0) {
+                        long difference = previousTimestamp - timestamp;
+                        assertThat(difference == 604800, equalTo(true));
+                    }
+                    previousTimestamp = timestamp;
+                } else if (intervalTimes[k].equals("day")) {
+                    assertThat((Float) responseList.get(i).get("open"), equalTo(dayOpen[i]));
+                    assertThat((Float) responseList.get(i).get("close"), equalTo(dayClose[i]));
+                    assertThat((Float) responseList.get(i).get("high"), equalTo(dayHigh[i]));
+                    assertThat((Float) responseList.get(i).get("low"), equalTo(dayLow[i]));
+                    assertThat((Float) responseList.get(i).get("volume"), equalTo(dayVolume[i]));
+                    if (previousTimestamp != 0) {
+                        long difference = previousTimestamp - timestamp;
+                        assertThat(difference == 86400, equalTo(true));
+                    }
+                    previousTimestamp = timestamp;
+                } else if (intervalTimes[k].equals("hour")) {
+                    assertThat((Float) responseList.get(i).get("open"), equalTo(hourOpen[i]));
+                    assertThat((Float) responseList.get(i).get("close"), equalTo(hourClose[i]));
+                    assertThat((Float) responseList.get(i).get("high"), equalTo(hourHigh[i]));
+                    assertThat((Float) responseList.get(i).get("low"), equalTo(hourLow[i]));
+                    assertThat((Float) responseList.get(i).get("volume"), equalTo(hourVolume[i]));
+                    if (previousTimestamp != 0) {
+                        long difference = previousTimestamp - timestamp;
+                        assertThat(difference == 3600, equalTo(true));
+                    }
+                    previousTimestamp = timestamp;
+                }
+            }
+        }
+    }
 
 }
