@@ -934,11 +934,11 @@ public class InitialSystemTest {
         float[] dayLow = {400, 300, 200};
         float[] dayVolume = {200, 100, 100 };
 
-        float[] weekOpen = {300, 200, 100};
-        float[] weekClose = {600, 300, 200};
-        float[] weekHigh = {600, 300, 200};
-        float[] weekLow = {300, 200, 100};
-        float[] weekVolume = {300, 100, 100};
+        float[] weekOpen = {200, 100, 0};
+        float[] weekClose = {600, 200, 100};
+        float[] weekHigh = {600, 200, 100};
+        float[] weekLow = {200, 100, 0};
+        float[] weekVolume = {400, 100, 100};
 
         float[] monthOpen = {0, -100, 0};
         float[] monthClose = {600, 0, -100};
@@ -958,7 +958,6 @@ public class InitialSystemTest {
                     queryParam("intervals", 3).get(URI_PREFIX + "/balance/history").
                     then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
             ArrayList<Map<String, ?>> responseList = from(responseString).get("");
-
             long previousTimestamp = 0;
             for (int i = 0; i < responseList.size(); i++) {
                 long timestamp = new Long((Integer) responseList.get(i).get("timeStamp"));
