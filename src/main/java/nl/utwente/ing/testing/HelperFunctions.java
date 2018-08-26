@@ -3,6 +3,7 @@ package nl.utwente.ing.testing;
 import io.restassured.http.ContentType;
 import nl.utwente.ing.testing.bean.Category;
 import nl.utwente.ing.testing.bean.CategoryRule;
+import nl.utwente.ing.testing.bean.SavingGoal;
 import nl.utwente.ing.testing.bean.Transaction;
 
 import java.util.HashMap;
@@ -55,6 +56,15 @@ public class HelperFunctions {
         String responseString = given().contentType("application/json").
                 body(categoryRule).header("X-session-ID", sessionID).
                 post(URI_PREFIX + "/categoryRules").
+                then().contentType(ContentType.JSON).extract().response().asString();
+        Map<String, ?> responseMap = from(responseString).get("");
+        return new Long((Integer) responseMap.get("id"));
+    }
+
+    public static Long postSavingGoal(String sessionID, SavingGoal savingGoal) {
+        String responseString = given().contentType("application/json").
+                body(savingGoal).header("X-session-ID", sessionID).
+                post(URI_PREFIX + "/savingGoals").
                 then().contentType(ContentType.JSON).extract().response().asString();
         Map<String, ?> responseMap = from(responseString).get("");
         return new Long((Integer) responseMap.get("id"));

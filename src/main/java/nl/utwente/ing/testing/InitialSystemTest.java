@@ -3,8 +3,9 @@ package nl.utwente.ing.testing;
 import io.restassured.http.ContentType;
 import nl.utwente.ing.testing.bean.Category;
 import nl.utwente.ing.testing.bean.CategoryRule;
+import nl.utwente.ing.testing.bean.SavingGoal;
 import nl.utwente.ing.testing.bean.Transaction;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.text.SimpleDateFormat;
@@ -22,8 +23,8 @@ public class InitialSystemTest {
     private static String sessionID;
 
 
-    @BeforeAll
-    public static void setup() {
+    @BeforeEach
+    public void setup() {
         sessionID = getNewSessionID();
     }
 
@@ -885,11 +886,11 @@ public class InitialSystemTest {
         transactionList.add(new Transaction(dateFormat.format(c.getTime()),
                 100, "test", "NL02RABO0300065264", "deposit"));
 
-        c.add(Calendar.DAY_OF_YEAR, -1);
+        c.add(Calendar.DAY_OF_WEEK, -1);
         transactionList.add(new Transaction(dateFormat.format(c.getTime()),
                 100, "test", "NL03RABO0300065264", "deposit"));
 
-        c.add(Calendar.DAY_OF_YEAR, -1);
+        c.add(Calendar.DAY_OF_WEEK, -1);
         transactionList.add(new Transaction(dateFormat.format(c.getTime()),
                 100, "test", "NL04RABO0300065264", "deposit"));
 
@@ -932,13 +933,13 @@ public class InitialSystemTest {
         float[] dayClose = {600, 400, 300};
         float[] dayHigh = {600, 400, 300};
         float[] dayLow = {400, 300, 200};
-        float[] dayVolume = {200, 100, 100 };
+        float[] dayVolume = {200, 100, 100};
 
-        float[] weekOpen = {200, 100, 0};
-        float[] weekClose = {600, 200, 100};
-        float[] weekHigh = {600, 200, 100};
-        float[] weekLow = {200, 100, 0};
-        float[] weekVolume = {400, 100, 100};
+        float[] weekOpen = {400, 200, 100};
+        float[] weekClose = {600, 400, 200};
+        float[] weekHigh = {600, 400, 200};
+        float[] weekLow = {400, 200, 100};
+        float[] weekVolume = {200, 200, 100};
 
         float[] monthOpen = {0, -100, 0};
         float[] monthClose = {600, 0, -100};
@@ -962,55 +963,55 @@ public class InitialSystemTest {
             for (int i = 0; i < responseList.size(); i++) {
                 long timestamp = new Long((Integer) responseList.get(i).get("timeStamp"));
                 if (intervalTimes[k].equals("month")) {
-                    assertThat((Float) responseList.get(i).get("open"), equalTo(monthOpen[i]));
-                    assertThat((Float) responseList.get(i).get("close"), equalTo(monthClose[i]));
-                    assertThat((Float) responseList.get(i).get("high"), equalTo(monthHigh[i]));
-                    assertThat((Float) responseList.get(i).get("low"), equalTo(monthLow[i]));
-                    assertThat((Float) responseList.get(i).get("volume"), equalTo(monthVolume[i]));
+                    assertThat(responseList.get(i).get("open"), equalTo(monthOpen[i]));
+                    assertThat(responseList.get(i).get("close"), equalTo(monthClose[i]));
+                    assertThat(responseList.get(i).get("high"), equalTo(monthHigh[i]));
+                    assertThat(responseList.get(i).get("low"), equalTo(monthLow[i]));
+                    assertThat(responseList.get(i).get("volume"), equalTo(monthVolume[i]));
                     if (previousTimestamp != 0) {
                         long difference = previousTimestamp - timestamp;
                         assertThat(difference > 2400000 && difference < 2700000, equalTo(true));
                     }
                     previousTimestamp = timestamp;
                 } else if (intervalTimes[k].equals("year")) {
-                    assertThat((Float) responseList.get(i).get("open"), equalTo(yearOpen[i]));
-                    assertThat((Float) responseList.get(i).get("close"), equalTo(yearClose[i]));
-                    assertThat((Float) responseList.get(i).get("high"), equalTo(yearHigh[i]));
-                    assertThat((Float) responseList.get(i).get("low"), equalTo(yearLow[i]));
-                    assertThat((Float) responseList.get(i).get("volume"), equalTo(yearVolume[i]));
+                    assertThat(responseList.get(i).get("open"), equalTo(yearOpen[i]));
+                    assertThat(responseList.get(i).get("close"), equalTo(yearClose[i]));
+                    assertThat(responseList.get(i).get("high"), equalTo(yearHigh[i]));
+                    assertThat(responseList.get(i).get("low"), equalTo(yearLow[i]));
+                    assertThat(responseList.get(i).get("volume"), equalTo(yearVolume[i]));
                     if (previousTimestamp != 0) {
                         long difference = previousTimestamp - timestamp;
                         assertThat(difference > 31500000 && difference < 31700000, equalTo(true));
                     }
                     previousTimestamp = timestamp;
                 } else if (intervalTimes[k].equals("week")) {
-                    assertThat((Float) responseList.get(i).get("open"), equalTo(weekOpen[i]));
-                    assertThat((Float) responseList.get(i).get("close"), equalTo(weekClose[i]));
-                    assertThat((Float) responseList.get(i).get("high"), equalTo(weekHigh[i]));
-                    assertThat((Float) responseList.get(i).get("low"), equalTo(weekLow[i]));
-                    assertThat((Float) responseList.get(i).get("volume"), equalTo(weekVolume[i]));
+                    assertThat(responseList.get(i).get("open"), equalTo(weekOpen[i]));
+                    assertThat(responseList.get(i).get("close"), equalTo(weekClose[i]));
+                    assertThat(responseList.get(i).get("high"), equalTo(weekHigh[i]));
+                    assertThat(responseList.get(i).get("low"), equalTo(weekLow[i]));
+                    assertThat(responseList.get(i).get("volume"), equalTo(weekVolume[i]));
                     if (previousTimestamp != 0) {
                         long difference = previousTimestamp - timestamp;
                         assertThat(difference == 604800, equalTo(true));
                     }
                     previousTimestamp = timestamp;
                 } else if (intervalTimes[k].equals("day")) {
-                    assertThat((Float) responseList.get(i).get("open"), equalTo(dayOpen[i]));
-                    assertThat((Float) responseList.get(i).get("close"), equalTo(dayClose[i]));
-                    assertThat((Float) responseList.get(i).get("high"), equalTo(dayHigh[i]));
-                    assertThat((Float) responseList.get(i).get("low"), equalTo(dayLow[i]));
-                    assertThat((Float) responseList.get(i).get("volume"), equalTo(dayVolume[i]));
+                    assertThat(responseList.get(i).get("open"), equalTo(dayOpen[i]));
+                    assertThat(responseList.get(i).get("close"), equalTo(dayClose[i]));
+                    assertThat(responseList.get(i).get("high"), equalTo(dayHigh[i]));
+                    assertThat(responseList.get(i).get("low"), equalTo(dayLow[i]));
+                    assertThat(responseList.get(i).get("volume"), equalTo(dayVolume[i]));
                     if (previousTimestamp != 0) {
                         long difference = previousTimestamp - timestamp;
                         assertThat(difference == 86400, equalTo(true));
                     }
                     previousTimestamp = timestamp;
                 } else if (intervalTimes[k].equals("hour")) {
-                    assertThat((Float) responseList.get(i).get("open"), equalTo(hourOpen[i]));
-                    assertThat((Float) responseList.get(i).get("close"), equalTo(hourClose[i]));
-                    assertThat((Float) responseList.get(i).get("high"), equalTo(hourHigh[i]));
-                    assertThat((Float) responseList.get(i).get("low"), equalTo(hourLow[i]));
-                    assertThat((Float) responseList.get(i).get("volume"), equalTo(hourVolume[i]));
+                    assertThat(responseList.get(i).get("open"), equalTo(hourOpen[i]));
+                    assertThat(responseList.get(i).get("close"), equalTo(hourClose[i]));
+                    assertThat(responseList.get(i).get("high"), equalTo(hourHigh[i]));
+                    assertThat(responseList.get(i).get("low"), equalTo(hourLow[i]));
+                    assertThat(responseList.get(i).get("volume"), equalTo(hourVolume[i]));
                     if (previousTimestamp != 0) {
                         long difference = previousTimestamp - timestamp;
                         assertThat(difference == 3600, equalTo(true));
@@ -1019,6 +1020,130 @@ public class InitialSystemTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void testGetSavingGoals() {
+        // Test invalid session ID status code
+        when().get(URI_PREFIX + "/savingGoals").then().statusCode(401);
+        given().header("X-session-ID", "A1B2C3D4E5").get(URI_PREFIX + "/savingGoals").then().statusCode(401);
+
+        ArrayList<SavingGoal> savingGoals = new ArrayList<>();
+        savingGoals.add(new SavingGoal("test", 200, 10, 40, 0));
+        savingGoals.add(new SavingGoal("test", 200, 10, 40, 0));
+        savingGoals.add(new SavingGoal("test2", 2002, 102, 402, 0));
+
+
+        for (SavingGoal s : savingGoals) {
+            HelperFunctions.postSavingGoal(sessionID, s);
+        }
+
+        String responseString = given().header("X-session-ID", sessionID).get(URI_PREFIX + "/savingGoals").
+                then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
+        ArrayList<Map<String, ?>> responseList = from(responseString).get("");
+
+        for (int i = 0; i < responseList.size(); i++) {
+            assertThat(responseList.get(i).get("name"), equalTo(savingGoals.get(i).getName()));
+            assertThat(responseList.get(i).get("goal"), equalTo(savingGoals.get(i).getGoal()));
+            assertThat(responseList.get(i).get("savePerMonth"), equalTo(savingGoals.get(i).getSavePerMonth()));
+            assertThat(responseList.get(i).get("minBalanceRequired"), equalTo(savingGoals.get(i).getMinBalanceRequired()));
+        }
+    }
+
+    @Test
+    public void testDeleteSavingGoal() {
+        // Test invalid session ID status code
+        when().delete(URI_PREFIX + "/savingGoals/1").then().statusCode(401);
+        given().header("X-session-ID", "A1B2C3D4E5").delete(URI_PREFIX + "/savingGoals/1").then().statusCode(401);
+
+        // Test invalid categoryRule ID status code
+        given().header("X-session-ID", sessionID).delete(URI_PREFIX + "/savingGoals/8381237").then().statusCode(404);
+
+        // Test valid categoryRule status code
+        SavingGoal savingGoal = new SavingGoal("test", 33, 3, 5, 0);
+        long savingGoalID = postSavingGoal(sessionID, savingGoal);
+        given().header("X-session-ID", sessionID).delete(URI_PREFIX + "/savingGoals/" + savingGoalID).
+                then().statusCode(204);
+    }
+
+    @Test
+    public void testSavingGoalTransactions() {
+        ArrayList<SavingGoal> savingGoals = new ArrayList<>();
+
+        savingGoals.add(new SavingGoal("test1", 1000, 10, 1150, 0));
+        savingGoals.add(new SavingGoal("test3", 5, 1, 20000, 0));
+
+        for (SavingGoal s : savingGoals) {
+            postSavingGoal(sessionID, s);
+        }
+        long savingGoalIDToDelete = postSavingGoal(sessionID, new SavingGoal("test2", 5, 1, 0, 0));
+
+        ArrayList<Transaction> transactionList = new ArrayList<>();
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+        Calendar c = new GregorianCalendar();
+        dateFormat.setCalendar(c);
+        c.setTimeInMillis(System.currentTimeMillis());
+
+        c.add(Calendar.YEAR, -1);
+        transactionList.add(new Transaction(dateFormat.format(c.getTime()),
+                1000, "test", "NL01RABO0300065264", "deposit"));
+
+        c.add(Calendar.MONTH, +1);
+        transactionList.add(new Transaction(dateFormat.format(c.getTime()),
+                100, "test", "NL02RABO0300065264", "deposit"));
+
+        c.add(Calendar.MONTH, +3);
+        transactionList.add(new Transaction(dateFormat.format(c.getTime()),
+                500, "test", "NL03RABO0300065264", "deposit"));
+
+        c.add(Calendar.MONTH, +8);
+        transactionList.add(new Transaction(dateFormat.format(c.getTime()),
+                100, "test", "NL04RABO0300065264", "deposit"));
+
+        for (Transaction transaction : transactionList) {
+            postTransaction(sessionID, transaction);
+        }
+
+        float[] savingGoalBalances = {80, 0, 5};
+
+        // Test the balances of the savingGoals
+        String responseString = given().header("X-session-ID", sessionID).get(URI_PREFIX + "/savingGoals").
+                then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
+        ArrayList<Map<String, ?>> responseList = from(responseString).get("");
+        for (int i = 0; i < responseList.size(); i++) {
+            assertThat(responseList.get(i).get("balance"), equalTo(savingGoalBalances[i]));
+        }
+
+        // Delete a savingGoal that has max balance
+        given().header("X-session-ID", sessionID).delete(URI_PREFIX + "/savingGoals/" + savingGoalIDToDelete).
+                then().statusCode(204);
+
+        // Check the amount of transactions in the system.
+        int transactionAmount = 18;
+        responseString = given().header("X-session-ID", sessionID).get(URI_PREFIX + "/transactions").
+                then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
+        responseList = from(responseString).get("");
+        assertThat(responseList.size(), equalTo(transactionAmount));
+
+        // Check the balance history
+        float[] yearOpen = {1585, 0};
+        float[] yearClose = {1620, 1585};
+        float[] yearHigh = {1620, 1596};
+        float[] yearLow = {1515, 0};
+        float[] yearVolume = {175, 1615};
+        responseString = given().header("X-session-ID", sessionID).queryParam("interval", "year").
+                queryParam("intervals", 2).get(URI_PREFIX + "/balance/history").
+                then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
+        responseList = from(responseString).get("");
+        for (int i = 0; i < responseList.size(); i++) {
+            assertThat(responseList.get(i).get("open"), equalTo(yearOpen[i]));
+            assertThat(responseList.get(i).get("close"), equalTo(yearClose[i]));
+            assertThat(responseList.get(i).get("high"), equalTo(yearHigh[i]));
+            assertThat(responseList.get(i).get("low"), equalTo(yearLow[i]));
+            assertThat(responseList.get(i).get("volume"), equalTo(yearVolume[i]));
+        }
+
     }
 
 }
