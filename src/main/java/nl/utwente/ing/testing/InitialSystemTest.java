@@ -1,10 +1,7 @@
 package nl.utwente.ing.testing;
 
 import io.restassured.http.ContentType;
-import nl.utwente.ing.testing.bean.Category;
-import nl.utwente.ing.testing.bean.CategoryRule;
-import nl.utwente.ing.testing.bean.SavingGoal;
-import nl.utwente.ing.testing.bean.Transaction;
+import nl.utwente.ing.testing.bean.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -78,7 +75,7 @@ public class InitialSystemTest {
         for (int i = 0; i < transactionList.size(); i++) {
             assertThat((String) responseList.get(i).get("date"), equalTo(transactionList.get(i).getDate()));
             assertThat((Float) responseList.get(i).get("amount"), equalTo(transactionList.get(i).getAmount()));
-            assertThat((String) responseList.get(0).get("description"), equalTo(transactionList.get(i).getDescription()));
+            assertThat((String) responseList.get(i).get("description"), equalTo(transactionList.get(i).getDescription()));
             assertThat((String) responseList.get(i).get("externalIBAN"), equalTo(transactionList.get(i).getExternalIBAN()));
             assertThat((String) responseList.get(i).get("type"), equalTo(transactionList.get(i).getType()));
         }
@@ -1144,6 +1141,133 @@ public class InitialSystemTest {
             assertThat(responseList.get(i).get("volume"), equalTo(yearVolume[i]));
         }
 
+    }
+
+    @Test
+    public void testGetPaymentRequests() {
+        // Test invalid session ID status code
+        when().get(URI_PREFIX + "/paymentRequests").then().statusCode(401);
+        given().header("X-session-ID", "A1B2C3D4E5").get(URI_PREFIX + "/paymentRequests").then().statusCode(401);
+
+        ArrayList<PaymentRequest> paymentRequests = new ArrayList<>();
+        paymentRequests.add(new PaymentRequest("test", "2015-04-13T08:06:10.000CEST", 100, 5, false, new ArrayList<>()));
+        paymentRequests.add(new PaymentRequest("test2", "2016-04-13T08:06:10.000CEST", 50, 2, false, new ArrayList<>()));
+        paymentRequests.add(new PaymentRequest("test3", "2016-05-13T08:06:10.000CEST", 70, 2, false, new ArrayList<>()));
+
+
+        for (PaymentRequest p : paymentRequests) {
+            HelperFunctions.postPaymentRequest(sessionID, p);
+        }
+
+        String responseString = given().header("X-session-ID", sessionID).get(URI_PREFIX + "/paymentRequests").
+                then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
+        ArrayList<Map<String, ?>> responseList = from(responseString).get("");
+
+        for (int i = 0; i < responseList.size(); i++) {
+            assertThat(responseList.get(i).get("description"), equalTo(paymentRequests.get(i).getDescription()));
+            assertThat(responseList.get(i).get("due_date"), equalTo(paymentRequests.get(i).getDue_date()));
+            assertThat(responseList.get(i).get("amount"), equalTo(paymentRequests.get(i).getAmount()));
+            assertThat(new Long((Integer) responseList.get(i).get("number_of_requests")), equalTo(paymentRequests.get(i).getNumber_of_requests()));
+            assertThat(responseList.get(i).get("filled"), equalTo(paymentRequests.get(i).isFilled()));
+            assertThat(responseList.get(i).get("transactions"), equalTo(paymentRequests.get(i).getTransactions()));
+        }
+    }
+
+    @Test
+    public void testGetPaymentRequestsThatHaveTransactions() {
+        ArrayList<PaymentRequest> paymentRequests = new ArrayList<>();
+        paymentRequests.add(new PaymentRequest("test", "2014-04-13T08:06:10.000CEST", 100, 5, false, new ArrayList<>()));
+        paymentRequests.add(new PaymentRequest("test2", "2013-04-13T08:06:10.000CEST", 50, 2, false, new ArrayList<>()));
+        paymentRequests.add(new PaymentRequest("test3", "2013-05-13T08:06:10.000CEST", 70, 2, false, new ArrayList<>()));
+
+        for (PaymentRequest p : paymentRequests) {
+            HelperFunctions.postPaymentRequest(sessionID, p);
+        }
+
+        ArrayList<Transaction> transactionList = new ArrayList<>();
+        Transaction transaction = new Transaction("2015-04-13T08:06:10.000CEST",
+                100, "test", "NL01RABO0300065264", "deposit");
+
+        transactionList.add(transaction);
+        transactionList.add(new Transaction("2015-04-13T10:06:10.002CEST",
+                200, "test", "NL02RABO0300065264", "withdrawal"));
+        transactionList.add(new Transaction("2015-04-13T12:06:10.003CEST",
+                500, "test", "NL03RABO0300065264", "deposit"));
+        transactionList.add(new Transaction("2015-04-13T01:07:10.004CEST",
+                400, "test", "NL04RABO0300065264", "withdrawal"));
+        for (Transaction t : transactionList) {
+            postTransaction(sessionID, t);
+        }
+
+        String responseString = given().header("X-session-ID", sessionID).get(URI_PREFIX + "/paymentRequests").
+                then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
+        ArrayList<Map<String, ?>> responseList = from(responseString).get("");
+        for (int i = 0; i < responseList.size(); i++) {
+            assertThat(responseList.get(i).get("description"), equalTo(paymentRequests.get(i).getDescription()));
+            assertThat(responseList.get(i).get("due_date"), equalTo(paymentRequests.get(i).getDue_date()));
+            assertThat(responseList.get(i).get("amount"), equalTo(paymentRequests.get(i).getAmount()));
+            assertThat(new Long((Integer) responseList.get(i).get("number_of_requests")), equalTo(paymentRequests.get(i).getNumber_of_requests()));
+            assertThat(responseList.get(i).get("filled"), equalTo(paymentRequests.get(i).isFilled()));
+            ArrayList<Map<String, ?>> transactions = (ArrayList<Map<String, ?>>) responseList.get(i).get("transactions");
+            if (transactions.size() > 0) {
+                assertThat(transactions.get(0).get("date"), equalTo(transaction.getDate()));
+                assertThat(transactions.get(0).get("amount"), equalTo(transaction.getAmount()));
+                assertThat(transactions.get(0).get("description"), equalTo(transaction.getDescription()));
+                assertThat(transactions.get(0).get("externalIBAN"), equalTo(transaction.getExternalIBAN()));
+                assertThat(transactions.get(0).get("type"), equalTo(transaction.getType()));
+            }
+        }
+    }
+
+    @Test
+    public void testFillPaymentRequests() {
+
+
+        ArrayList<PaymentRequest> paymentRequests = new ArrayList<>();
+        PaymentRequest paymentRequest = new PaymentRequest("test", "2014-04-13T08:06:10.000CEST", 100, 5, false, new ArrayList<>());
+        paymentRequests.add(paymentRequest);
+
+        for (PaymentRequest p : paymentRequests) {
+            HelperFunctions.postPaymentRequest(sessionID, p);
+        }
+
+        ArrayList<Transaction> transactionList = new ArrayList<>();
+
+        transactionList.add(new Transaction("2015-04-13T08:06:10.000CEST",
+                100, "test", "NL01RABO0300065264", "deposit"));
+        transactionList.add(new Transaction("2015-04-14T10:06:10.002CEST",
+                100, "test", "NL02RABO0300065264", "deposit"));
+        transactionList.add(new Transaction("2015-04-15T12:06:10.003CEST",
+                100, "test", "NL03RABO0300065264", "deposit"));
+        transactionList.add(new Transaction("2015-04-16T01:07:10.004CEST",
+                100, "test", "NL04RABO0300065264", "deposit"));
+        transactionList.add(new Transaction("2015-05-13T01:07:10.004CEST",
+                100, "test", "NL04RABO0300065264", "deposit"));
+        for (Transaction t : transactionList) {
+            postTransaction(sessionID, t);
+        }
+
+        paymentRequest.setTransactions(transactionList);
+        paymentRequest.setFilled(true);
+
+        String responseString = given().header("X-session-ID", sessionID).get(URI_PREFIX + "/paymentRequests").
+                then().statusCode(200).contentType(ContentType.JSON).extract().response().asString();
+        ArrayList<Map<String, ?>> responseList = from(responseString).get("");
+        for (int i = 0; i < responseList.size(); i++) {
+            assertThat(responseList.get(i).get("description"), equalTo(paymentRequests.get(i).getDescription()));
+            assertThat(responseList.get(i).get("due_date"), equalTo(paymentRequests.get(i).getDue_date()));
+            assertThat(responseList.get(i).get("amount"), equalTo(paymentRequests.get(i).getAmount()));
+            assertThat(new Long((Integer) responseList.get(i).get("number_of_requests")), equalTo(paymentRequests.get(i).getNumber_of_requests()));
+            assertThat(responseList.get(i).get("filled"), equalTo(paymentRequests.get(i).isFilled()));
+            ArrayList<Map<String, ?>> transactions = (ArrayList<Map<String, ?>>) responseList.get(i).get("transactions");
+            for (int k = 0; k < transactions.size(); k++) {
+                assertThat(transactions.get(k).get("date"), equalTo(paymentRequest.getTransactions().get(k).getDate()));
+                assertThat(transactions.get(k).get("amount"), equalTo(paymentRequest.getTransactions().get(k).getAmount()));
+                assertThat(transactions.get(k).get("description"), equalTo(paymentRequest.getTransactions().get(k).getDescription()));
+                assertThat(transactions.get(k).get("externalIBAN"), equalTo(paymentRequest.getTransactions().get(k).getExternalIBAN()));
+                assertThat(transactions.get(k).get("type"), equalTo(paymentRequest.getTransactions().get(k).getType()));
+            }
+        }
     }
 
 }
